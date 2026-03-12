@@ -2,7 +2,7 @@ using System;
 using Dalamud.Plugin;
 using Dalamud.Game.Command;
 using Dalamud.Plugin.Services;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using SaddlebagExchange.UI;
 
 namespace SaddlebagExchange
@@ -54,8 +54,6 @@ namespace SaddlebagExchange
             if (!_windowOpen)
                 return;
 
-            // Avoid SetNextWindowSize: plugin was crashing in cimgui.dll (igSetNextWindowSize) when using
-            // a different ImGui/cimgui than the host. Window size can be resized by user.
             if (!ImGui.Begin("Saddlebag Exchange", ref _windowOpen))
             {
                 ImGui.End();

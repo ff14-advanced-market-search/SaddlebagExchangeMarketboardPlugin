@@ -15,14 +15,36 @@
     <LoadRequiredState>0</LoadRequiredState>
   </PropertyGroup>
 
-  <!-- Compile-only ref: exclude runtime so we use host's ImGui/cimgui (avoids crash in cimgui.dll). -->
+  <!-- Use host's ImGui (single cimgui). Do NOT use ImGui.NET - it loads a second cimgui from Temp and crashes. -->
   <ItemGroup>
-    <PackageReference Include="ImGui.NET" Version="1.89.4.2" ExcludeAssets="runtime" />
+    <Reference Include="Dalamud.Bindings.ImGui">
+      <HintPath>$(USERPROFILE)\AppData\Roaming\XIVLauncher\addon\Hooks\14.0.4.1\Dalamud.Bindings.ImGui.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
   </ItemGroup>
 
   <!-- Icon shown in /xlplugins for dev plugins (icon.png next to DLL) -->
   <ItemGroup>
     <Content Include="Assets\icon.png" CopyToOutputDirectory="PreserveNewest" Link="icon.png" />
   </ItemGroup>
+
+  <!-- After build: (1) copy to bin\Debug so "other path" works, (2) copy to XIVLauncher devPlugins -->
+  <Target Name="CopyToDevPlugins" AfterTargets="Build" Condition=" '$(Configuration)' == 'Debug' ">
+    <PropertyGroup>
+      <_DevPluginsDir>$(MSBuildProjectDirectory)\..\..\SaddlebagExchange</_DevPluginsDir>
+      <_BinDebugDir>$(MSBuildProjectDirectory)\bin\$(Configuration)</_BinDebugDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <_CopyFiles Include="$(OutputPath)SaddlebagExchange.dll" />
+      <_CopyFiles Include="$(OutputPath)icon.png" />
+      <_CopyFiles Include="$(MSBuildProjectDirectory)\manifest.json" Condition=" Exists('$(MSBuildProjectDirectory)\manifest.json') " />
+    </ItemGroup>
+    <!-- Copy to bin\Debug so adding "...\SaddlebagExchange\bin\Debug\SaddlebagExchange.dll" as dev path works -->
+    <MakeDir Directories="$(_BinDebugDir)" Condition=" !Exists('$(_BinDebugDir)') " />
+    <Copy SourceFiles="@(_CopyFiles)" DestinationFolder="$(_BinDebugDir)" SkipUnchangedFiles="true" />
+    <!-- Copy to XIVLauncher devPlugins folder -->
+    <MakeDir Directories="$(_DevPluginsDir)" Condition=" !Exists('$(_DevPluginsDir)') " />
+    <Copy SourceFiles="@(_CopyFiles)" DestinationFolder="$(_DevPluginsDir)" SkipUnchangedFiles="true" />
+  </Target>
 
 </Project>

@@ -1,8 +1,9 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using SaddlebagExchange.Models;
 using SaddlebagExchange.Services;
 
@@ -18,6 +19,7 @@ namespace SaddlebagExchange.UI
         private List<ResellingResultItem> _scanResults = new();
         private bool _scanInProgress;
         private string _homeServerBuffer = string.Empty;
+        private readonly byte[] _homeServerBytes = new byte[HomeServerBufferSize];
         private string _errorMessage = string.Empty;
 
         private static ResellingParams GetDefaultParams() => new()
@@ -159,8 +161,13 @@ namespace SaddlebagExchange.UI
             ImGui.Checkbox("Show out of stock", ref showOutStock);
             _params.ShowOutStock = showOutStock;
 
-            ImGui.InputText("Home server", ref _homeServerBuffer, (uint)HomeServerBufferSize);
-            _params.HomeServer = _homeServerBuffer.Trim();
+            int len = Encoding.UTF8.GetBytes(_homeServerBuffer, 0, Math.Min(_homeServerBuffer.Length, HomeServerBufferSize - 1), _homeServerBytes, 0);
+            _homeServerBytes[len] = 0;
+            if (ImGui.InputText("Home server", _homeServerBytes, ImGuiInputTextFlags.None))
+            {
+                _homeServerBuffer = Encoding.UTF8.GetString(_homeServerBytes).TrimEnd('\0');
+                _params.HomeServer = _homeServerBuffer.Trim();
+            }
 
             ImGui.Spacing();
             bool doSearch = ImGui.Button("Search");
