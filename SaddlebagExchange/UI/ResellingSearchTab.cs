@@ -38,68 +38,43 @@ namespace SaddlebagExchange.UI
             ShowOutStock = true
         };
 
+        // Presets match frontend recommendedQueries (exact titles and params)
         private static readonly (string Label, ResellingParams Params)[] Presets =
         {
-            ("Quick flips (high ROI)", new ResellingParams
-            {
-                PreferredRoi = 50,
-                MinProfitAmount = 5000,
-                MinDesiredAvgPpu = 5000,
-                MinStackSize = 1,
-                HoursAgo = 168,
-                MinSales = 2,
-                Hq = false,
-                HomeServer = string.Empty,
-                Filters = new[] { 0 },
-                RegionWide = false,
-                IncludeVendor = false,
-                ShowOutStock = true
-            }),
-            ("Steady resells", new ResellingParams
-            {
-                PreferredRoi = 25,
-                MinProfitAmount = 10000,
-                MinDesiredAvgPpu = 10000,
-                MinStackSize = 1,
-                HoursAgo = 168,
-                MinSales = 8,
-                Hq = false,
-                HomeServer = string.Empty,
-                Filters = new[] { 0 },
-                RegionWide = false,
-                IncludeVendor = false,
-                ShowOutStock = true
-            }),
-            ("Vendor resells", new ResellingParams
-            {
-                PreferredRoi = 20,
-                MinProfitAmount = 5000,
-                MinDesiredAvgPpu = 3000,
-                MinStackSize = 1,
-                HoursAgo = 168,
-                MinSales = 2,
-                Hq = false,
-                HomeServer = string.Empty,
-                Filters = new[] { 0 },
-                RegionWide = false,
-                IncludeVendor = true,
-                ShowOutStock = true
-            }),
-            ("Data center only", new ResellingParams
-            {
-                PreferredRoi = 30,
-                MinProfitAmount = 10000,
-                MinDesiredAvgPpu = 10000,
-                MinStackSize = 1,
-                HoursAgo = 168,
-                MinSales = 4,
-                Hq = false,
-                HomeServer = string.Empty,
-                Filters = new[] { 0 },
-                RegionWide = false,
-                IncludeVendor = false,
-                ShowOutStock = true
-            })
+            ("Olivias Furnishing Items Medium Sell", P(168, 2, 25, 1, 75000, 30000, new[] { 56, 65, 66, 67, 68, 69, 70, 71, 72, 81, 82 }, false, true, true, true)),
+            ("Olivias Consumable Collectables Medium Sell", P(168, 2, 25, 1, 75000, 30000, new[] { 75, 80, 90 }, false, true, true, true)),
+            ("Fast Sales Search", P(168, 20, 25, 1, 500, 500, new[] { 0 }, false, false, false, true)),
+            ("NPC Vendor Furniture Item Search", P(168, 2, 50, 1, 5000, 3000, new[] { -4 }, false, true, true, false)),
+            ("Commodities Search", P(168, 2, 25, 2, 1000, 1000, new[] { 0 }, false, false, false, true)),
+            ("Mega Value Search", P(336, 1, 25, 1, 1000000, 1000000, new[] { 0 }, false, true, true, true)),
+            ("NPC Vendor Item Search", P(48, 5, 50, 1, 1000, 1000, new[] { -1 }, false, true, true, true)),
+            ("Beginner Out of Stock Search", P(168, 2, 99, 1, 100, 100, new[] { 1, 2, 3, 4, 7 }, true, false, true, true)),
+            ("Low Quality Out of Stock Search", P(168, 2, 99, 1, 100, 100, new[] { 7, 54 }, false, true, true, true)),
+            ("Olivias General Flipping Quick Sell", P(48, 5, 25, 1, 5000, 5000, new[] { 0 }, false, true, true, true)),
+            ("Olivias Class Quest Items Quick Sell", P(48, 2, 25, 1, 5000, 5000, new[] { -2, -3 }, false, true, true, true)),
+            ("Olivias Furnishing Items Quick Sell", P(48, 5, 25, 1, 5000, 5000, new[] { 56, 65, 66, 67, 68, 69, 70, 71, 72, 81, 82 }, false, true, true, true)),
+            ("Olivias Minions, Mounts, and Collectable Items Quick Sell", P(48, 5, 25, 1, 5000, 5000, new[] { 75, 80, 90 }, false, true, true, true)),
+            ("Olivias Glamor Medium Sell", P(168, 2, 25, 1, 75000, 30000, new[] { 1, 2, -5 }, false, true, true, true)),
+            ("Olivias High Investment Furniture Items", P(336, 1, 25, 1, 300000, 300000, new[] { 56, 65, 66, 67, 68, 69, 70, 71, 72, 81, 82 }, false, true, true, true)),
+            ("Olivias High Investment Collectable Items", P(336, 1, 25, 1, 300000, 300000, new[] { 75, 80, 90 }, false, true, true, true)),
+            ("Olivias High Value Glamor Items", P(336, 1, 25, 1, 300000, 300000, new[] { 1, 2, -5 }, false, true, true, true)),
+            ("Olivias High Value Materials", P(336, 1, 25, 1, 300000, 300000, new[] { 6 }, false, true, true, true))
+        };
+
+        static ResellingParams P(int hours, int minSales, int roi, int minStack, int minProfit, int ppu, int[] filters, bool hq, bool includeVendor, bool showOutStock, bool regionWide) => new()
+        {
+            HoursAgo = hours,
+            MinSales = minSales,
+            PreferredRoi = roi,
+            MinStackSize = minStack,
+            MinProfitAmount = minProfit,
+            MinDesiredAvgPpu = ppu,
+            Filters = filters,
+            Hq = hq,
+            IncludeVendor = includeVendor,
+            ShowOutStock = showOutStock,
+            RegionWide = regionWide,
+            HomeServer = string.Empty
         };
 
         public void SetDefaultHomeServer(string? homeServer)
@@ -116,11 +91,12 @@ namespace SaddlebagExchange.UI
             ImGui.Separator();
             ImGui.Spacing();
 
-            // --- Presets ---
+            // --- Presets (match frontend recommendedQueries order) ---
             ImGui.Text("Presets");
+            const int presetsPerLine = 2;
             for (int i = 0; i < Presets.Length; i++)
             {
-                if (i > 0) ImGui.SameLine();
+                if (i > 0 && i % presetsPerLine != 0) ImGui.SameLine();
                 if (ImGui.Button(Presets[i].Label))
                     ApplyPreset(Presets[i].Params);
             }
