@@ -15,27 +15,39 @@ namespace SaddlebagExchange
         private readonly MainWindow _mainWindow = new();
         private IDalamudPluginInterface? _pi;
         private ICommandManager? _cmd;
+        private bool _commandsRegistered;
         private readonly Action _onOpenMainUi;
         private readonly Action _onOpenConfigUi;
 
         public Plugin(IDalamudPluginInterface pluginInterface)
         {
             _pi = pluginInterface;
-            _onOpenMainUi = () => _windowOpen = true;
-            _onOpenConfigUi = () => _windowOpen = true; // no separate config; open main window
+            // Only Settings button should open the UI. Open button does nothing.
+            _onOpenMainUi = () => { };
+            _onOpenConfigUi = () => _windowOpen = true;
 
             var uiBuilder = pluginInterface.UiBuilder;
             uiBuilder.Draw += Draw;
             uiBuilder.OpenMainUi += _onOpenMainUi;
             uiBuilder.OpenConfigUi += _onOpenConfigUi;
 
-            _cmd = pluginInterface.GetService(typeof(ICommandManager)) as ICommandManager;
-            _cmd?.AddHandler("/saddlebag", new CommandInfo(OnCommand)
-            {
-                HelpMessage = "Open Saddlebag Exchange window"
-            });
-
+            TryRegisterCommands();
             TrySetDefaultHomeServer(pluginInterface);
+        }
+
+        private void TryRegisterCommands()
+        {
+            if (_pi == null || _commandsRegistered) return;
+            _cmd = _pi.GetService(typeof(ICommandManager)) as ICommandManager;
+            if (_cmd == null) return;
+            var help = "Open Saddlebag Exchange window";
+            try
+            {
+                _cmd.AddHandler("/saddlebag", new CommandInfo(OnCommand) { HelpMessage = help });
+                _cmd.AddHandler("/saddlebagexchange", new CommandInfo(OnCommand) { HelpMessage = help });
+                _commandsRegistered = true;
+            }
+            catch { /* ignore if already registered or failed */ }
         }
 
         private void TrySetDefaultHomeServer(IDalamudPluginInterface pi)
@@ -51,6 +63,9 @@ namespace SaddlebagExchange
 
         public void Draw()
         {
+            if (!_commandsRegistered)
+                TryRegisterCommands();
+
             if (!_windowOpen)
                 return;
 
@@ -72,6 +87,7 @@ namespace SaddlebagExchange
             uiBuilder.OpenMainUi -= _onOpenMainUi;
             uiBuilder.OpenConfigUi -= _onOpenConfigUi;
             _cmd?.RemoveHandler("/saddlebag");
+            _cmd?.RemoveHandler("/saddlebagexchange");
             _cmd = null;
             _pi = null;
         }
