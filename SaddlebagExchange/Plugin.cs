@@ -54,7 +54,8 @@ namespace SaddlebagExchange
             if (!_windowOpen)
                 return;
 
-            ImGui.SetNextWindowSize(new System.Numerics.Vector2(700, 500), ImGuiCond.FirstUseEver);
+            // Avoid SetNextWindowSize: plugin was crashing in cimgui.dll (igSetNextWindowSize) when using
+            // a different ImGui/cimgui than the host. Window size can be resized by user.
             if (!ImGui.Begin("Saddlebag Exchange", ref _windowOpen))
             {
                 ImGui.End();

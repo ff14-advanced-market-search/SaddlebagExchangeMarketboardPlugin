@@ -15,8 +15,9 @@
     <LoadRequiredState>0</LoadRequiredState>
   </PropertyGroup>
 
+  <!-- Compile-only ref: exclude runtime so we use host's ImGui/cimgui (avoids crash in cimgui.dll). -->
   <ItemGroup>
-    <PackageReference Include="ImGui.NET" Version="1.89.4.2" />
+    <PackageReference Include="ImGui.NET" Version="1.89.4.2" ExcludeAssets="runtime" />
   </ItemGroup>
 
   <!-- Icon shown in /xlplugins for dev plugins (icon.png next to DLL) -->
