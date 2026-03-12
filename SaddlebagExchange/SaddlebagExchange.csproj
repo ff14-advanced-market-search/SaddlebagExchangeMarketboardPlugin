@@ -19,4 +19,9 @@
     <PackageReference Include="ImGui.NET" Version="1.89.4.2" />
   </ItemGroup>
 
+  <!-- Icon shown in /xlplugins for dev plugins (icon.png next to DLL) -->
+  <ItemGroup>
+    <Content Include="Assets\icon.png" CopyToOutputDirectory="PreserveNewest" Link="icon.png" />
+  </ItemGroup>
+
 </Project>

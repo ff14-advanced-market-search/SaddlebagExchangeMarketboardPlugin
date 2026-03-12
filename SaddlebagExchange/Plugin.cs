@@ -1,3 +1,4 @@
+using System;
 using Dalamud.Plugin;
 using Dalamud.Game.Command;
 using Dalamud.Plugin.Services;
@@ -12,15 +13,29 @@ namespace SaddlebagExchange
 
         private bool _windowOpen;
         private readonly MainWindow _mainWindow = new();
+        private IDalamudPluginInterface? _pi;
+        private ICommandManager? _cmd;
+        private readonly Action _onOpenMainUi;
+        private readonly Action _onOpenConfigUi;
 
         public Plugin(IDalamudPluginInterface pluginInterface)
         {
-            TrySetDefaultHomeServer(pluginInterface);
-            var cmd = pluginInterface.GetService(typeof(ICommandManager)) as ICommandManager;
-            cmd?.AddHandler("/saddlebag", new CommandInfo(OnCommand)
+            _pi = pluginInterface;
+            _onOpenMainUi = () => _windowOpen = true;
+            _onOpenConfigUi = () => _windowOpen = true; // no separate config; open main window
+
+            var uiBuilder = pluginInterface.UiBuilder;
+            uiBuilder.Draw += Draw;
+            uiBuilder.OpenMainUi += _onOpenMainUi;
+            uiBuilder.OpenConfigUi += _onOpenConfigUi;
+
+            _cmd = pluginInterface.GetService(typeof(ICommandManager)) as ICommandManager;
+            _cmd?.AddHandler("/saddlebag", new CommandInfo(OnCommand)
             {
                 HelpMessage = "Open Saddlebag Exchange window"
             });
+
+            TrySetDefaultHomeServer(pluginInterface);
         }
 
         private void TrySetDefaultHomeServer(IDalamudPluginInterface pi)
@@ -52,6 +67,14 @@ namespace SaddlebagExchange
 
         public void Dispose()
         {
+            if (_pi == null) return;
+            var uiBuilder = _pi.UiBuilder;
+            uiBuilder.Draw -= Draw;
+            uiBuilder.OpenMainUi -= _onOpenMainUi;
+            uiBuilder.OpenConfigUi -= _onOpenConfigUi;
+            _cmd?.RemoveHandler("/saddlebag");
+            _cmd = null;
+            _pi = null;
         }
     }
 }
