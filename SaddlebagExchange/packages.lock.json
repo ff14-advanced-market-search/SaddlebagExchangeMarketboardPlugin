@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "dependencies": {
+    "net10.0": {
+      "DalamudPackager": {
+        "type": "Direct",
+        "requested": "[14.0.2, )",
+        "resolved": "14.0.2",
+        "contentHash": "dQJeq+8eyHzra4Cg5eZ/3LAeS3/UpvvLriYJGSncMK9LqJ7Q4B6jwcOsxo3PfxVd15xj+IzVFxkPqIBmPQu8/w=="
+      },
+      "DotNet.ReproducibleBuilds": {
+        "type": "Direct",
+        "requested": "[1.2.39, )",
+        "resolved": "1.2.39",
+        "contentHash": "fcFN01tDTIQqDuTwr1jUQK/geofiwjG5DycJQOnC72i1SsLAk1ELe+apBOuZ11UMQG8YKFZG1FgvjZPbqHyatg=="
+      },
+      "ImGui.NET": {
+        "type": "Direct",
+        "requested": "[1.89.4.2, )",
+        "resolved": "1.89.5",
+        "contentHash": "HEFKtJv+Tu2bmFnFGHrzfbrX5XN7gdVQAS6REEMgF1qS0n3aTxiuLUGCRXDk1mW5iRCP4X+teqkyGGFoDR10zQ=="
+      }
+    }
+  }
+}

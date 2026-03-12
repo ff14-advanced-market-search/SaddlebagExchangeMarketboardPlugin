@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk;Dalamud.NET.Sdk/14.0.2">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <AssemblyName>SaddlebagExchange</AssemblyName>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Author>Saddlebag Exchange</Author>
+    <Name>Saddlebag Exchange</Name>
+    <Punchline>Marketboard analytics for FFXIV</Punchline>
+    <Description>Advanced marketboard tools and cross-world arbitrage scanning.</Description>
+    <InternalName>SaddlebagExchange</InternalName>
+    <AssemblyVersion>1.0.0</AssemblyVersion>
+    <DalamudApiLevel>14</DalamudApiLevel>
+    <LoadRequiredState>0</LoadRequiredState>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ImGui.NET" Version="1.89.4.2" />
+  </ItemGroup>
+
+</Project>

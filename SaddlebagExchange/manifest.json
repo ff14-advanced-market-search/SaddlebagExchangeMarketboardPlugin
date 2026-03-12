@@ -1,0 +1,10 @@
+{
+  "Author": "Saddlebag Exchange",
+  "Name": "Saddlebag Exchange",
+  "Punchline": "Marketboard analytics for FFXIV",
+  "Description": "Advanced marketboard tools and cross-world arbitrage scanning.",
+  "InternalName": "SaddlebagExchange",
+  "AssemblyVersion": "1.0.0",
+  "DalamudApiLevel": 14,
+  "LoadRequiredState": 0
+}
