@@ -3,38 +3,39 @@ using System.Text.Json.Serialization;
 namespace SaddlebagExchange.Models
 {
     /// <summary>
-    /// One row from POST /api/scan response. Property names match common API response conventions.
+    /// One item from POST /api/scan response "data" array. Property names match API exactly.
     /// </summary>
     public sealed class ResellingResultItem
     {
         [JsonPropertyName("item_id")]
+        [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
         public int ItemId { get; set; }
 
-        [JsonPropertyName("item_name")]
+        [JsonPropertyName("real_name")]
         public string? ItemName { get; set; }
 
-        [JsonPropertyName("buy_server")]
+        [JsonPropertyName("server")]
         public string? BuyServer { get; set; }
 
-        [JsonPropertyName("buy_price")]
+        [JsonPropertyName("ppu")]
         public long BuyPrice { get; set; }
 
-        [JsonPropertyName("sell_price")]
+        [JsonPropertyName("avg_ppu")]
         public long SellPrice { get; set; }
 
-        [JsonPropertyName("profit")]
+        [JsonPropertyName("profit_amount")]
         public long Profit { get; set; }
 
-        [JsonPropertyName("roi")]
+        [JsonPropertyName("ROI")]
         public double Roi { get; set; }
 
         [JsonPropertyName("stack_size")]
         public int StackSize { get; set; }
 
-        [JsonPropertyName("sales_per_week")]
+        [JsonPropertyName("regionWeeklySalesAmountNQ")]
         public int? SalesPerWeek { get; set; }
 
-        [JsonPropertyName("home_server")]
-        public string? HomeServer { get; set; }
+        [JsonPropertyName("home_server_price")]
+        public long HomeServerPrice { get; set; }
     }
 }

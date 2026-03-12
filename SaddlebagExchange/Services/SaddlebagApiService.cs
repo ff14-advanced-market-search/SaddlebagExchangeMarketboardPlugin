@@ -37,8 +37,8 @@ namespace SaddlebagExchange.Services
             response.EnsureSuccessStatusCode();
 
             var json = await response.Content.ReadAsStringAsync(cancel).ConfigureAwait(false);
-            var list = JsonSerializer.Deserialize<List<ResellingResultItem>>(json, JsonOptions);
-            return list ?? new List<ResellingResultItem>();
+            var wrapper = JsonSerializer.Deserialize<ResellingScanResponse>(json, JsonOptions);
+            return wrapper?.Data ?? new List<ResellingResultItem>();
         }
     }
 }
