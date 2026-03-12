@@ -26,6 +26,10 @@ namespace SaddlebagExchange.Models
         [JsonPropertyName("profit_amount")]
         public long Profit { get; set; }
 
+        [JsonPropertyName("profit_raw_percent")]
+        [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
+        public double ProfitPercent { get; set; }
+
         [JsonPropertyName("ROI")]
         public double Roi { get; set; }
 
@@ -37,5 +41,45 @@ namespace SaddlebagExchange.Models
 
         [JsonPropertyName("home_server_price")]
         public long HomeServerPrice { get; set; }
+
+        [JsonPropertyName("home_update_time")]
+        public string? HomeUpdateTime { get; set; }
+
+        [JsonPropertyName("update_time")]
+        public string? UpdateTime { get; set; }
+
+        [JsonPropertyName("url")]
+        public string? UniversalisUrl { get; set; }
+
+        [JsonPropertyName("npc_vendor_info")]
+        public string? NpcVendorInfo { get; set; }
+
+        [JsonPropertyName("sale_rates")]
+        [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
+        public double SaleRates { get; set; }
+
+        [JsonPropertyName("regionWeeklyMedianNQ")]
+        public long RegionWeeklyMedianNQ { get; set; }
+
+        [JsonPropertyName("regionWeeklyAverageNQ")]
+        public long RegionWeeklyAverageNQ { get; set; }
+
+        [JsonPropertyName("regionWeeklyQuantitySoldNQ")]
+        public int RegionWeeklyQuantitySoldNQ { get; set; }
+
+        [JsonPropertyName("regionWeeklyMedianHQ")]
+        public long RegionWeeklyMedianHQ { get; set; }
+
+        [JsonPropertyName("regionWeeklyAverageHQ")]
+        public long RegionWeeklyAverageHQ { get; set; }
+
+        [JsonPropertyName("regionWeeklySalesAmountHQ")]
+        public int RegionWeeklySalesAmountHQ { get; set; }
+
+        [JsonPropertyName("regionWeeklyQuantitySoldHQ")]
+        public int RegionWeeklyQuantitySoldHQ { get; set; }
+
+        public const string SaddlebagBaseUrl = "https://saddlebagexchange.com/queries/item-data/";
+        public string SaddlebagUrl => SaddlebagBaseUrl + ItemId;
     }
 }

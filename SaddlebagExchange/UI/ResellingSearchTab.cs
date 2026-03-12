@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -21,6 +23,8 @@ namespace SaddlebagExchange.UI
         private string _homeServerBuffer = string.Empty;
         private readonly byte[] _homeServerBytes = new byte[HomeServerBufferSize];
         private string _errorMessage = string.Empty;
+        private int _sortColumnIndex = -1;
+        private bool _sortAscending = true;
 
         private static ResellingParams GetDefaultParams() => new()
         {
@@ -182,6 +186,16 @@ namespace SaddlebagExchange.UI
             DrawResultsTable(results);
         }
 
+        private static void OpenUrl(string? url)
+        {
+            if (string.IsNullOrEmpty(url)) return;
+            try
+            {
+                using var _ = Process.Start(new ProcessStartInfo { FileName = url, UseShellExecute = true });
+            }
+            catch { /* ignore */ }
+        }
+
         private void ApplyPreset(ResellingParams p)
         {
             _params.PreferredRoi = p.PreferredRoi;
@@ -232,46 +246,166 @@ namespace SaddlebagExchange.UI
             });
         }
 
-        private static void DrawResultsTable(List<ResellingResultItem> results)
+        private enum ResultColumn
         {
-            ImGui.Text($"Results: {results.Count} items");
+            ItemName = 0,
+            ProfitAmount,
+            AvgPpu,
+            HomePrice,
+            LowestPpu,
+            ProfitPercent,
+            Roi,
+            SalesPerHour,
+            Server,
+            StackSize,
+            Universalis,
+            Vendor,
+            Saddlebag,
+            RegionMedianNQ,
+            RegionSalesNQ,
+            _Count
+        }
+
+        private void DrawResultsTable(List<ResellingResultItem> results)
+        {
+            ImGui.Text($"Results: {results.Count} items (click column header to sort)");
             ImGui.Spacing();
 
-            if (!ImGui.BeginTable("ResellingResults", 8, ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg | ImGuiTableFlags.Resizable | ImGuiTableFlags.ScrollY, new System.Numerics.Vector2(-1, 300)))
+            const int colCount = (int)ResultColumn._Count;
+            if (!ImGui.BeginTable("ResellingResults", colCount, ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg | ImGuiTableFlags.Resizable | ImGuiTableFlags.ScrollY, new System.Numerics.Vector2(-1, 320)))
                 return;
 
-            ImGui.TableSetupColumn("Item", ImGuiTableColumnFlags.WidthStretch);
-            ImGui.TableSetupColumn("Buy world", ImGuiTableColumnFlags.WidthFixed, 80);
-            ImGui.TableSetupColumn("Buy (gil)", ImGuiTableColumnFlags.WidthFixed, 80);
-            ImGui.TableSetupColumn("Sell (gil)", ImGuiTableColumnFlags.WidthFixed, 80);
-            ImGui.TableSetupColumn("Profit", ImGuiTableColumnFlags.WidthFixed, 80);
-            ImGui.TableSetupColumn("ROI %", ImGuiTableColumnFlags.WidthFixed, 56);
-            ImGui.TableSetupColumn("Stack", ImGuiTableColumnFlags.WidthFixed, 48);
-            ImGui.TableSetupColumn("Sales/wk", ImGuiTableColumnFlags.WidthFixed, 56);
-            ImGui.TableHeadersRow();
+            ImGui.TableSetupColumn("Item Name", ImGuiTableColumnFlags.WidthStretch, 0, (int)ResultColumn.ItemName);
+            ImGui.TableSetupColumn("Profit", ImGuiTableColumnFlags.WidthFixed, 72, (int)ResultColumn.ProfitAmount);
+            ImGui.TableSetupColumn("Avg PPU", ImGuiTableColumnFlags.WidthFixed, 72, (int)ResultColumn.AvgPpu);
+            ImGui.TableSetupColumn("Home", ImGuiTableColumnFlags.WidthFixed, 64, (int)ResultColumn.HomePrice);
+            ImGui.TableSetupColumn("Low PPU", ImGuiTableColumnFlags.WidthFixed, 64, (int)ResultColumn.LowestPpu);
+            ImGui.TableSetupColumn("Profit %", ImGuiTableColumnFlags.WidthFixed, 56, (int)ResultColumn.ProfitPercent);
+            ImGui.TableSetupColumn("ROI %", ImGuiTableColumnFlags.WidthFixed, 48, (int)ResultColumn.Roi);
+            ImGui.TableSetupColumn("Sales/hr", ImGuiTableColumnFlags.WidthFixed, 56, (int)ResultColumn.SalesPerHour);
+            ImGui.TableSetupColumn("Server", ImGuiTableColumnFlags.WidthFixed, 90, (int)ResultColumn.Server);
+            ImGui.TableSetupColumn("Stack", ImGuiTableColumnFlags.WidthFixed, 40, (int)ResultColumn.StackSize);
+            ImGui.TableSetupColumn("Universalis", ImGuiTableColumnFlags.WidthFixed, 72, (int)ResultColumn.Universalis);
+            ImGui.TableSetupColumn("Vendor", ImGuiTableColumnFlags.WidthFixed, 48, (int)ResultColumn.Vendor);
+            ImGui.TableSetupColumn("Item Data", ImGuiTableColumnFlags.WidthFixed, 56, (int)ResultColumn.Saddlebag);
+            ImGui.TableSetupColumn("Reg Med NQ", ImGuiTableColumnFlags.WidthFixed, 72, (int)ResultColumn.RegionMedianNQ);
+            ImGui.TableSetupColumn("Reg Sales NQ", ImGuiTableColumnFlags.WidthFixed, 72, (int)ResultColumn.RegionSalesNQ);
 
-            foreach (var row in results)
+            var sorted = SortResults(results);
+
+            // Draw sortable header row (click to sort)
+            ImGui.TableNextRow();
+            for (int c = 0; c < colCount; c++)
             {
+                ImGui.TableNextColumn();
+                bool active = _sortColumnIndex == c;
+                string label = GetColumnHeader(c) + (active ? (_sortAscending ? " ▲" : " ▼") : "");
+                if (ImGui.Selectable(label, active, ImGuiSelectableFlags.None, System.Numerics.Vector2.Zero))
+                {
+                    if (_sortColumnIndex == c)
+                        _sortAscending = !_sortAscending;
+                    else
+                    {
+                        _sortColumnIndex = c;
+                        _sortAscending = true;
+                    }
+                }
+            }
+
+            int rowIndex = 0;
+            foreach (var row in sorted)
+            {
+                ImGui.PushID(rowIndex);
                 ImGui.TableNextRow();
                 ImGui.TableNextColumn();
                 ImGui.Text(row.ItemName ?? row.ItemId.ToString());
                 ImGui.TableNextColumn();
-                ImGui.Text(row.BuyServer ?? "-");
-                ImGui.TableNextColumn();
-                ImGui.Text(row.BuyPrice.ToString("N0"));
+                ImGui.Text(row.Profit >= 999_999_999 ? "∞" : row.Profit.ToString("N0"));
                 ImGui.TableNextColumn();
                 ImGui.Text(row.SellPrice.ToString("N0"));
                 ImGui.TableNextColumn();
-                ImGui.Text(row.Profit.ToString("N0"));
+                ImGui.Text(row.HomeServerPrice == 0 ? "-" : row.HomeServerPrice.ToString("N0"));
+                ImGui.TableNextColumn();
+                ImGui.Text(row.BuyPrice.ToString("N0"));
+                ImGui.TableNextColumn();
+                ImGui.Text(row.ProfitPercent >= 999_999_999 ? "∞" : row.ProfitPercent.ToString("F1"));
                 ImGui.TableNextColumn();
                 ImGui.Text(row.Roi.ToString("F1"));
                 ImGui.TableNextColumn();
+                ImGui.Text(row.SaleRates.ToString("F4"));
+                ImGui.TableNextColumn();
+                ImGui.Text(row.BuyServer ?? "-");
+                ImGui.TableNextColumn();
                 ImGui.Text(row.StackSize.ToString());
                 ImGui.TableNextColumn();
+                if (ImGui.SmallButton("Univ")) OpenUrl(row.UniversalisUrl);
+                ImGui.TableNextColumn();
+                if (!string.IsNullOrEmpty(row.NpcVendorInfo))
+                { if (ImGui.SmallButton("Vend")) OpenUrl(row.NpcVendorInfo); }
+                else ImGui.Text("-");
+                ImGui.TableNextColumn();
+                if (ImGui.SmallButton("Data")) OpenUrl(row.SaddlebagUrl);
+                ImGui.TableNextColumn();
+                ImGui.Text(row.RegionWeeklyMedianNQ.ToString("N0"));
+                ImGui.TableNextColumn();
                 ImGui.Text((row.SalesPerWeek ?? 0).ToString());
+                ImGui.PopID();
+                rowIndex++;
             }
 
             ImGui.EndTable();
+        }
+
+        private static string GetColumnHeader(int column)
+        {
+            return column switch
+            {
+                (int)ResultColumn.ItemName => "Item Name",
+                (int)ResultColumn.ProfitAmount => "Profit",
+                (int)ResultColumn.AvgPpu => "Avg PPU",
+                (int)ResultColumn.HomePrice => "Home",
+                (int)ResultColumn.LowestPpu => "Low PPU",
+                (int)ResultColumn.ProfitPercent => "Profit %",
+                (int)ResultColumn.Roi => "ROI %",
+                (int)ResultColumn.SalesPerHour => "Sales/hr",
+                (int)ResultColumn.Server => "Server",
+                (int)ResultColumn.StackSize => "Stack",
+                (int)ResultColumn.Universalis => "Univ.",
+                (int)ResultColumn.Vendor => "Vendor",
+                (int)ResultColumn.Saddlebag => "Data",
+                (int)ResultColumn.RegionMedianNQ => "Reg Med NQ",
+                (int)ResultColumn.RegionSalesNQ => "Reg Sales NQ",
+                _ => ""
+            };
+        }
+
+        private List<ResellingResultItem> SortResults(List<ResellingResultItem> results)
+        {
+            if (_sortColumnIndex < 0 || _sortColumnIndex >= (int)ResultColumn._Count)
+                return results;
+            var list = new List<ResellingResultItem>(results);
+            int dir = _sortAscending ? 1 : -1;
+            list.Sort((a, b) =>
+            {
+                int c = _sortColumnIndex switch
+                {
+                    (int)ResultColumn.ItemName => string.Compare(a.ItemName ?? "", b.ItemName ?? "", StringComparison.Ordinal),
+                    (int)ResultColumn.ProfitAmount => a.Profit.CompareTo(b.Profit),
+                    (int)ResultColumn.AvgPpu => a.SellPrice.CompareTo(b.SellPrice),
+                    (int)ResultColumn.HomePrice => a.HomeServerPrice.CompareTo(b.HomeServerPrice),
+                    (int)ResultColumn.LowestPpu => a.BuyPrice.CompareTo(b.BuyPrice),
+                    (int)ResultColumn.ProfitPercent => a.ProfitPercent.CompareTo(b.ProfitPercent),
+                    (int)ResultColumn.Roi => a.Roi.CompareTo(b.Roi),
+                    (int)ResultColumn.SalesPerHour => a.SaleRates.CompareTo(b.SaleRates),
+                    (int)ResultColumn.Server => string.Compare(a.BuyServer ?? "", b.BuyServer ?? "", StringComparison.Ordinal),
+                    (int)ResultColumn.StackSize => a.StackSize.CompareTo(b.StackSize),
+                    (int)ResultColumn.RegionMedianNQ => a.RegionWeeklyMedianNQ.CompareTo(b.RegionWeeklyMedianNQ),
+                    (int)ResultColumn.RegionSalesNQ => (a.SalesPerWeek ?? 0).CompareTo(b.SalesPerWeek ?? 0),
+                    _ => 0
+                };
+                return c * dir;
+            });
+            return list;
         }
     }
 }
