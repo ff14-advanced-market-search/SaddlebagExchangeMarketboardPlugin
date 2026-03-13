@@ -383,9 +383,14 @@ namespace SaddlebagExchange.UI
             foreach (int colId in visibleCols)
             {
                 ImGui.TableNextColumn();
+                ImGui.PushID(colId);
                 bool active = _sortColumnIndex == colId;
-                string label = GetColumnHeader(colId) + (active ? (_sortAscending ? " ▲" : " ▼") : "");
-                if (ImGui.Selectable(label, active, ImGuiSelectableFlags.None, System.Numerics.Vector2.Zero))
+                string headerText = GetColumnHeader(colId) + (active ? (_sortAscending ? " ▲" : " ▼") : "");
+                var cellAvail = ImGui.GetContentRegionAvail();
+                var p0 = ImGui.GetCursorPos();
+                float lineH = ImGui.GetTextLineHeightWithSpacing();
+                float buttonH = Math.Min(cellAvail.Y, lineH * 4f);
+                if (ImGui.InvisibleButton("sort", new System.Numerics.Vector2(cellAvail.X, buttonH)))
                 {
                     if (_sortColumnIndex == colId)
                         _sortAscending = !_sortAscending;
@@ -395,6 +400,11 @@ namespace SaddlebagExchange.UI
                         _sortAscending = true;
                     }
                 }
+                ImGui.SetCursorPos(p0);
+                ImGui.PushTextWrapPos(p0.X + cellAvail.X);
+                ImGui.TextWrapped(headerText);
+                ImGui.PopTextWrapPos();
+                ImGui.PopID();
             }
 
             int rowIndex = 0;
@@ -564,30 +574,30 @@ namespace SaddlebagExchange.UI
         {
             return column switch
             {
-                (int)ResultColumn.ItemName => 180f,
-                (int)ResultColumn.ProfitAmount => 100f,
-                (int)ResultColumn.AvgPpu => 100f,
-                (int)ResultColumn.HomePrice => 100f,
-                (int)ResultColumn.HomeUpdated => 110f,
-                (int)ResultColumn.LowestPpu => 100f,
-                (int)ResultColumn.LowestUpdated => 110f,
-                (int)ResultColumn.ProfitPercent => 90f,
-                (int)ResultColumn.Roi => 90f,
-                (int)ResultColumn.SalesPerHour => 100f,
-                (int)ResultColumn.Server => 90f,
-                (int)ResultColumn.StackSize => 50f,
-                (int)ResultColumn.Universalis => 44f,
-                (int)ResultColumn.Vendor => 44f,
-                (int)ResultColumn.Saddlebag => 44f,
-                (int)ResultColumn.RegMedNQ => 90f,
-                (int)ResultColumn.RegAvgNQ => 90f,
-                (int)ResultColumn.RegSalesNQ => 100f,
-                (int)ResultColumn.RegQtyNQ => 90f,
-                (int)ResultColumn.RegMedHQ => 90f,
-                (int)ResultColumn.RegAvgHQ => 90f,
-                (int)ResultColumn.RegSalesHQ => 100f,
-                (int)ResultColumn.RegQtyHQ => 90f,
-                _ => 80f
+                (int)ResultColumn.ItemName => 220f,
+                (int)ResultColumn.ProfitAmount => 120f,
+                (int)ResultColumn.AvgPpu => 120f,
+                (int)ResultColumn.HomePrice => 120f,
+                (int)ResultColumn.HomeUpdated => 140f,
+                (int)ResultColumn.LowestPpu => 120f,
+                (int)ResultColumn.LowestUpdated => 140f,
+                (int)ResultColumn.ProfitPercent => 110f,
+                (int)ResultColumn.Roi => 120f,
+                (int)ResultColumn.SalesPerHour => 130f,
+                (int)ResultColumn.Server => 120f,
+                (int)ResultColumn.StackSize => 60f,
+                (int)ResultColumn.Universalis => 70f,
+                (int)ResultColumn.Vendor => 100f,
+                (int)ResultColumn.Saddlebag => 70f,
+                (int)ResultColumn.RegMedNQ => 120f,
+                (int)ResultColumn.RegAvgNQ => 120f,
+                (int)ResultColumn.RegSalesNQ => 140f,
+                (int)ResultColumn.RegQtyNQ => 120f,
+                (int)ResultColumn.RegMedHQ => 120f,
+                (int)ResultColumn.RegAvgHQ => 120f,
+                (int)ResultColumn.RegSalesHQ => 140f,
+                (int)ResultColumn.RegQtyHQ => 120f,
+                _ => 100f
             };
         }
 
