@@ -374,7 +374,7 @@ namespace SaddlebagExchange.UI
             {
                 int colId = visibleCols[i];
                 float defaultW = GetDefaultColumnWidth(colId);
-                ImGui.TableSetupColumn(GetColumnHeader(colId), colId == (int)ResultColumn.ItemName ? ImGuiTableColumnFlags.WidthStretch : ImGuiTableColumnFlags.WidthFixed, defaultW, (uint)colId);
+                ImGui.TableSetupColumn(GetColumnHeader(colId), ImGuiTableColumnFlags.WidthFixed, defaultW, (uint)colId);
             }
 
             var sorted = SortResults(results);
