@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -250,6 +251,19 @@ namespace SaddlebagExchange.UI
                    || row.ItemId.ToString().Contains(term, comparison);
         }
 
+        private static void SetClipboardText(string? text)
+        {
+            if (string.IsNullOrEmpty(text)) return;
+            try
+            {
+                ClipboardHelper.SetText(text);
+            }
+            catch
+            {
+                /* ignore clipboard errors */
+            }
+        }
+
         private static void OpenUrl(string? url)
         {
             if (string.IsNullOrEmpty(url)) return;
@@ -486,7 +500,9 @@ namespace SaddlebagExchange.UI
             switch ((ResultColumn)colId)
             {
                 case ResultColumn.ItemName:
-                    ImGui.Text(row.ItemName ?? row.ItemId.ToString());
+                    string name = row.ItemName ?? row.ItemId.ToString();
+                    if (ImGui.Selectable(name, false, ImGuiSelectableFlags.None, System.Numerics.Vector2.Zero))
+                        SetClipboardText(name);
                     break;
                 case ResultColumn.ProfitAmount:
                     ImGui.Text(row.Profit >= 999_999_999 ? "∞" : row.Profit.ToString("N0"));
@@ -658,6 +674,70 @@ namespace SaddlebagExchange.UI
                 return c * dir;
             });
             return list;
+        }
+    }
+
+    internal static class ClipboardHelper
+    {
+        private const uint CF_UNICODETEXT = 13;
+
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern bool OpenClipboard(IntPtr hWndNewOwner);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern bool CloseClipboard();
+
+        [DllImport("user32.dll")]
+        private static extern bool EmptyClipboard();
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr SetClipboardData(uint uFormat, IntPtr hMem);
+
+        [DllImport("kernel32.dll")]
+        private static extern IntPtr GlobalAlloc(uint uFlags, UIntPtr dwBytes);
+
+        [DllImport("kernel32.dll")]
+        private static extern IntPtr GlobalLock(IntPtr hMem);
+
+        [DllImport("kernel32.dll")]
+        private static extern bool GlobalUnlock(IntPtr hMem);
+
+        private const uint GMEM_MOVEABLE = 0x0002;
+
+        public static void SetText(string text)
+        {
+            if (text == null) return;
+            var bytes = (text.Length + 1) * 2;
+            var hMem = GlobalAlloc(GMEM_MOVEABLE, (UIntPtr)bytes);
+            if (hMem == IntPtr.Zero) return;
+            try
+            {
+                var ptr = GlobalLock(hMem);
+                if (ptr == IntPtr.Zero) return;
+                try
+                {
+                    Marshal.Copy(text.ToCharArray(), 0, ptr, text.Length);
+                    Marshal.WriteInt16(ptr, text.Length * 2, 0);
+                }
+                finally
+                {
+                    GlobalUnlock(hMem);
+                }
+                if (!OpenClipboard(IntPtr.Zero)) return;
+                try
+                {
+                    EmptyClipboard();
+                    SetClipboardData(CF_UNICODETEXT, hMem);
+                }
+                finally
+                {
+                    CloseClipboard();
+                }
+            }
+            catch
+            {
+                // GlobalAlloc buffer is abandoned on failure; clipboard may be left empty
+            }
         }
     }
 }
