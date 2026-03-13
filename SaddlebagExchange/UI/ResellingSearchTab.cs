@@ -27,8 +27,36 @@ namespace SaddlebagExchange.UI
         private bool _sortAscending = true;
         private bool _resultsWindowOpen;
         private bool _showColumnsPopup;
+        private int _tableIdCounter;
         private readonly List<int> _columnOrder = new();
         private readonly bool[] _columnVisible = new bool[(int)ResultColumn._Count];
+
+        private static int[] GetDefaultColumnOrder() => new[]
+        {
+            (int)ResultColumn.ItemName,
+            (int)ResultColumn.Saddlebag,
+            (int)ResultColumn.Universalis,
+            (int)ResultColumn.Vendor,
+            (int)ResultColumn.ProfitAmount,
+            (int)ResultColumn.AvgPpu,
+            (int)ResultColumn.HomePrice,
+            (int)ResultColumn.HomeUpdated,
+            (int)ResultColumn.LowestPpu,
+            (int)ResultColumn.LowestUpdated,
+            (int)ResultColumn.ProfitPercent,
+            (int)ResultColumn.Roi,
+            (int)ResultColumn.SalesPerHour,
+            (int)ResultColumn.Server,
+            (int)ResultColumn.StackSize,
+            (int)ResultColumn.RegMedNQ,
+            (int)ResultColumn.RegAvgNQ,
+            (int)ResultColumn.RegSalesNQ,
+            (int)ResultColumn.RegQtyNQ,
+            (int)ResultColumn.RegMedHQ,
+            (int)ResultColumn.RegAvgHQ,
+            (int)ResultColumn.RegSalesHQ,
+            (int)ResultColumn.RegQtyHQ
+        };
 
         private void EnsureColumnState()
         {
@@ -36,7 +64,7 @@ namespace SaddlebagExchange.UI
             if (_columnOrder.Count != n)
             {
                 _columnOrder.Clear();
-                for (int i = 0; i < n; i++)
+                foreach (int i in GetDefaultColumnOrder())
                 {
                     _columnOrder.Add(i);
                     _columnVisible[i] = true;
@@ -324,20 +352,30 @@ namespace SaddlebagExchange.UI
             ImGui.SameLine();
             if (ImGui.Button("Reset columns"))
             {
-                for (int i = 0; i < _columnOrder.Count; i++)
+                _columnOrder.Clear();
+                foreach (int i in GetDefaultColumnOrder())
                 {
-                    _columnOrder[i] = i;
+                    _columnOrder.Add(i);
                     _columnVisible[i] = true;
                 }
             }
+            ImGui.SameLine();
+            if (ImGui.Button("Reset column widths"))
+                _tableIdCounter++;
             ImGui.Spacing();
 
-            var tableSize = new System.Numerics.Vector2(-1, 320);
-            if (!ImGui.BeginTable("ResellingResults", visibleCols.Count, ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg | ImGuiTableFlags.Resizable | ImGuiTableFlags.ScrollY | ImGuiTableFlags.ScrollX, tableSize))
+            var avail = ImGui.GetContentRegionAvail();
+            var tableSize = new System.Numerics.Vector2(avail.X, Math.Max(200, avail.Y));
+            string tableId = "ResellingResults##" + _tableIdCounter;
+            if (!ImGui.BeginTable(tableId, visibleCols.Count, ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg | ImGuiTableFlags.Resizable | ImGuiTableFlags.ScrollY | ImGuiTableFlags.ScrollX, tableSize))
                 return;
 
-            foreach (int colId in visibleCols)
-                ImGui.TableSetupColumn(GetColumnHeader(colId), colId == (int)ResultColumn.ItemName ? ImGuiTableColumnFlags.WidthStretch : ImGuiTableColumnFlags.WidthFixed, colId == (int)ResultColumn.ItemName ? 120 : 80, (uint)colId);
+            for (int i = 0; i < visibleCols.Count; i++)
+            {
+                int colId = visibleCols[i];
+                float defaultW = GetDefaultColumnWidth(colId);
+                ImGui.TableSetupColumn(GetColumnHeader(colId), colId == (int)ResultColumn.ItemName ? ImGuiTableColumnFlags.WidthStretch : ImGuiTableColumnFlags.WidthFixed, defaultW, (uint)colId);
+            }
 
             var sorted = SortResults(results);
 
@@ -519,6 +557,37 @@ namespace SaddlebagExchange.UI
                 (int)ResultColumn.RegSalesHQ => "Region Weekly Sales Amount HQ",
                 (int)ResultColumn.RegQtyHQ => "Region Weekly Quantity Sold HQ",
                 _ => ""
+            };
+        }
+
+        private static float GetDefaultColumnWidth(int column)
+        {
+            return column switch
+            {
+                (int)ResultColumn.ItemName => 180f,
+                (int)ResultColumn.ProfitAmount => 100f,
+                (int)ResultColumn.AvgPpu => 100f,
+                (int)ResultColumn.HomePrice => 100f,
+                (int)ResultColumn.HomeUpdated => 110f,
+                (int)ResultColumn.LowestPpu => 100f,
+                (int)ResultColumn.LowestUpdated => 110f,
+                (int)ResultColumn.ProfitPercent => 90f,
+                (int)ResultColumn.Roi => 90f,
+                (int)ResultColumn.SalesPerHour => 100f,
+                (int)ResultColumn.Server => 90f,
+                (int)ResultColumn.StackSize => 50f,
+                (int)ResultColumn.Universalis => 44f,
+                (int)ResultColumn.Vendor => 44f,
+                (int)ResultColumn.Saddlebag => 44f,
+                (int)ResultColumn.RegMedNQ => 90f,
+                (int)ResultColumn.RegAvgNQ => 90f,
+                (int)ResultColumn.RegSalesNQ => 100f,
+                (int)ResultColumn.RegQtyNQ => 90f,
+                (int)ResultColumn.RegMedHQ => 90f,
+                (int)ResultColumn.RegAvgHQ => 90f,
+                (int)ResultColumn.RegSalesHQ => 100f,
+                (int)ResultColumn.RegQtyHQ => 90f,
+                _ => 80f
             };
         }
 
