@@ -196,6 +196,17 @@ namespace SaddlebagExchange.UI
             catch { /* ignore */ }
         }
 
+        private static string FormatTimestamp(string? ms)
+        {
+            if (string.IsNullOrEmpty(ms) || !long.TryParse(ms, out var t)) return "-";
+            try
+            {
+                var dt = DateTimeOffset.FromUnixTimeMilliseconds(t);
+                return dt.LocalDateTime.ToString("M/d HH:mm");
+            }
+            catch { return ms.Length > 8 ? ms[^8..] : ms; }
+        }
+
         private void ApplyPreset(ResellingParams p)
         {
             _params.PreferredRoi = p.PreferredRoi;
@@ -252,7 +263,9 @@ namespace SaddlebagExchange.UI
             ProfitAmount,
             AvgPpu,
             HomePrice,
+            HomeUpdated,
             LowestPpu,
+            LowestUpdated,
             ProfitPercent,
             Roi,
             SalesPerHour,
@@ -261,35 +274,50 @@ namespace SaddlebagExchange.UI
             Universalis,
             Vendor,
             Saddlebag,
-            RegionMedianNQ,
-            RegionSalesNQ,
+            RegMedNQ,
+            RegAvgNQ,
+            RegSalesNQ,
+            RegQtyNQ,
+            RegMedHQ,
+            RegAvgHQ,
+            RegSalesHQ,
+            RegQtyHQ,
             _Count
         }
 
         private void DrawResultsTable(List<ResellingResultItem> results)
         {
-            ImGui.Text($"Results: {results.Count} items (click column header to sort)");
+            ImGui.Text($"Results: {results.Count} items (click header to sort, scroll horizontally for more columns)");
             ImGui.Spacing();
 
             const int colCount = (int)ResultColumn._Count;
-            if (!ImGui.BeginTable("ResellingResults", colCount, ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg | ImGuiTableFlags.Resizable | ImGuiTableFlags.ScrollY, new System.Numerics.Vector2(-1, 320)))
+            var tableSize = new System.Numerics.Vector2(-1, 320);
+            if (!ImGui.BeginTable("ResellingResults", colCount, ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg | ImGuiTableFlags.Resizable | ImGuiTableFlags.ScrollY | ImGuiTableFlags.ScrollX, tableSize))
                 return;
 
-            ImGui.TableSetupColumn("Item Name", ImGuiTableColumnFlags.WidthStretch, 0, (int)ResultColumn.ItemName);
+            ImGui.TableSetupColumn("Item Name", ImGuiTableColumnFlags.WidthStretch, 120, (int)ResultColumn.ItemName);
             ImGui.TableSetupColumn("Profit", ImGuiTableColumnFlags.WidthFixed, 72, (int)ResultColumn.ProfitAmount);
             ImGui.TableSetupColumn("Avg PPU", ImGuiTableColumnFlags.WidthFixed, 72, (int)ResultColumn.AvgPpu);
             ImGui.TableSetupColumn("Home", ImGuiTableColumnFlags.WidthFixed, 64, (int)ResultColumn.HomePrice);
+            ImGui.TableSetupColumn("Home Upd", ImGuiTableColumnFlags.WidthFixed, 64, (int)ResultColumn.HomeUpdated);
             ImGui.TableSetupColumn("Low PPU", ImGuiTableColumnFlags.WidthFixed, 64, (int)ResultColumn.LowestPpu);
+            ImGui.TableSetupColumn("Low Upd", ImGuiTableColumnFlags.WidthFixed, 64, (int)ResultColumn.LowestUpdated);
             ImGui.TableSetupColumn("Profit %", ImGuiTableColumnFlags.WidthFixed, 56, (int)ResultColumn.ProfitPercent);
             ImGui.TableSetupColumn("ROI %", ImGuiTableColumnFlags.WidthFixed, 48, (int)ResultColumn.Roi);
             ImGui.TableSetupColumn("Sales/hr", ImGuiTableColumnFlags.WidthFixed, 56, (int)ResultColumn.SalesPerHour);
             ImGui.TableSetupColumn("Server", ImGuiTableColumnFlags.WidthFixed, 90, (int)ResultColumn.Server);
             ImGui.TableSetupColumn("Stack", ImGuiTableColumnFlags.WidthFixed, 40, (int)ResultColumn.StackSize);
-            ImGui.TableSetupColumn("Universalis", ImGuiTableColumnFlags.WidthFixed, 72, (int)ResultColumn.Universalis);
-            ImGui.TableSetupColumn("Vendor", ImGuiTableColumnFlags.WidthFixed, 48, (int)ResultColumn.Vendor);
-            ImGui.TableSetupColumn("Item Data", ImGuiTableColumnFlags.WidthFixed, 56, (int)ResultColumn.Saddlebag);
-            ImGui.TableSetupColumn("Reg Med NQ", ImGuiTableColumnFlags.WidthFixed, 72, (int)ResultColumn.RegionMedianNQ);
-            ImGui.TableSetupColumn("Reg Sales NQ", ImGuiTableColumnFlags.WidthFixed, 72, (int)ResultColumn.RegionSalesNQ);
+            ImGui.TableSetupColumn("Univ", ImGuiTableColumnFlags.WidthFixed, 36, (int)ResultColumn.Universalis);
+            ImGui.TableSetupColumn("Vend", ImGuiTableColumnFlags.WidthFixed, 36, (int)ResultColumn.Vendor);
+            ImGui.TableSetupColumn("Data", ImGuiTableColumnFlags.WidthFixed, 36, (int)ResultColumn.Saddlebag);
+            ImGui.TableSetupColumn("Med NQ", ImGuiTableColumnFlags.WidthFixed, 60, (int)ResultColumn.RegMedNQ);
+            ImGui.TableSetupColumn("Avg NQ", ImGuiTableColumnFlags.WidthFixed, 60, (int)ResultColumn.RegAvgNQ);
+            ImGui.TableSetupColumn("Sales NQ", ImGuiTableColumnFlags.WidthFixed, 60, (int)ResultColumn.RegSalesNQ);
+            ImGui.TableSetupColumn("Qty NQ", ImGuiTableColumnFlags.WidthFixed, 52, (int)ResultColumn.RegQtyNQ);
+            ImGui.TableSetupColumn("Med HQ", ImGuiTableColumnFlags.WidthFixed, 60, (int)ResultColumn.RegMedHQ);
+            ImGui.TableSetupColumn("Avg HQ", ImGuiTableColumnFlags.WidthFixed, 60, (int)ResultColumn.RegAvgHQ);
+            ImGui.TableSetupColumn("Sales HQ", ImGuiTableColumnFlags.WidthFixed, 60, (int)ResultColumn.RegSalesHQ);
+            ImGui.TableSetupColumn("Qty HQ", ImGuiTableColumnFlags.WidthFixed, 52, (int)ResultColumn.RegQtyHQ);
 
             var sorted = SortResults(results);
 
@@ -326,7 +354,11 @@ namespace SaddlebagExchange.UI
                 ImGui.TableNextColumn();
                 ImGui.Text(row.HomeServerPrice == 0 ? "-" : row.HomeServerPrice.ToString("N0"));
                 ImGui.TableNextColumn();
+                ImGui.Text(FormatTimestamp(row.HomeUpdateTime));
+                ImGui.TableNextColumn();
                 ImGui.Text(row.BuyPrice.ToString("N0"));
+                ImGui.TableNextColumn();
+                ImGui.Text(FormatTimestamp(row.UpdateTime));
                 ImGui.TableNextColumn();
                 ImGui.Text(row.ProfitPercent >= 999_999_999 ? "∞" : row.ProfitPercent.ToString("F1"));
                 ImGui.TableNextColumn();
@@ -338,17 +370,29 @@ namespace SaddlebagExchange.UI
                 ImGui.TableNextColumn();
                 ImGui.Text(row.StackSize.ToString());
                 ImGui.TableNextColumn();
-                if (ImGui.SmallButton("Univ")) OpenUrl(row.UniversalisUrl);
+                if (ImGui.SmallButton("U")) OpenUrl(row.UniversalisUrl);
                 ImGui.TableNextColumn();
                 if (!string.IsNullOrEmpty(row.NpcVendorInfo))
-                { if (ImGui.SmallButton("Vend")) OpenUrl(row.NpcVendorInfo); }
+                { if (ImGui.SmallButton("V")) OpenUrl(row.NpcVendorInfo); }
                 else ImGui.Text("-");
                 ImGui.TableNextColumn();
-                if (ImGui.SmallButton("Data")) OpenUrl(row.SaddlebagUrl);
+                if (ImGui.SmallButton("S")) OpenUrl(row.SaddlebagUrl);
                 ImGui.TableNextColumn();
                 ImGui.Text(row.RegionWeeklyMedianNQ.ToString("N0"));
                 ImGui.TableNextColumn();
+                ImGui.Text(row.RegionWeeklyAverageNQ.ToString("N0"));
+                ImGui.TableNextColumn();
                 ImGui.Text((row.SalesPerWeek ?? 0).ToString());
+                ImGui.TableNextColumn();
+                ImGui.Text(row.RegionWeeklyQuantitySoldNQ.ToString());
+                ImGui.TableNextColumn();
+                ImGui.Text(row.RegionWeeklyMedianHQ.ToString("N0"));
+                ImGui.TableNextColumn();
+                ImGui.Text(row.RegionWeeklyAverageHQ.ToString("N0"));
+                ImGui.TableNextColumn();
+                ImGui.Text(row.RegionWeeklySalesAmountHQ.ToString());
+                ImGui.TableNextColumn();
+                ImGui.Text(row.RegionWeeklyQuantitySoldHQ.ToString());
                 ImGui.PopID();
                 rowIndex++;
             }
@@ -364,17 +408,25 @@ namespace SaddlebagExchange.UI
                 (int)ResultColumn.ProfitAmount => "Profit",
                 (int)ResultColumn.AvgPpu => "Avg PPU",
                 (int)ResultColumn.HomePrice => "Home",
+                (int)ResultColumn.HomeUpdated => "Home Upd",
                 (int)ResultColumn.LowestPpu => "Low PPU",
+                (int)ResultColumn.LowestUpdated => "Low Upd",
                 (int)ResultColumn.ProfitPercent => "Profit %",
                 (int)ResultColumn.Roi => "ROI %",
                 (int)ResultColumn.SalesPerHour => "Sales/hr",
                 (int)ResultColumn.Server => "Server",
                 (int)ResultColumn.StackSize => "Stack",
-                (int)ResultColumn.Universalis => "Univ.",
-                (int)ResultColumn.Vendor => "Vendor",
+                (int)ResultColumn.Universalis => "Univ",
+                (int)ResultColumn.Vendor => "Vend",
                 (int)ResultColumn.Saddlebag => "Data",
-                (int)ResultColumn.RegionMedianNQ => "Reg Med NQ",
-                (int)ResultColumn.RegionSalesNQ => "Reg Sales NQ",
+                (int)ResultColumn.RegMedNQ => "Med NQ",
+                (int)ResultColumn.RegAvgNQ => "Avg NQ",
+                (int)ResultColumn.RegSalesNQ => "Sales NQ",
+                (int)ResultColumn.RegQtyNQ => "Qty NQ",
+                (int)ResultColumn.RegMedHQ => "Med HQ",
+                (int)ResultColumn.RegAvgHQ => "Avg HQ",
+                (int)ResultColumn.RegSalesHQ => "Sales HQ",
+                (int)ResultColumn.RegQtyHQ => "Qty HQ",
                 _ => ""
             };
         }
@@ -393,14 +445,22 @@ namespace SaddlebagExchange.UI
                     (int)ResultColumn.ProfitAmount => a.Profit.CompareTo(b.Profit),
                     (int)ResultColumn.AvgPpu => a.SellPrice.CompareTo(b.SellPrice),
                     (int)ResultColumn.HomePrice => a.HomeServerPrice.CompareTo(b.HomeServerPrice),
+                    (int)ResultColumn.HomeUpdated => string.Compare(a.HomeUpdateTime ?? "", b.HomeUpdateTime ?? "", StringComparison.Ordinal),
                     (int)ResultColumn.LowestPpu => a.BuyPrice.CompareTo(b.BuyPrice),
+                    (int)ResultColumn.LowestUpdated => string.Compare(a.UpdateTime ?? "", b.UpdateTime ?? "", StringComparison.Ordinal),
                     (int)ResultColumn.ProfitPercent => a.ProfitPercent.CompareTo(b.ProfitPercent),
                     (int)ResultColumn.Roi => a.Roi.CompareTo(b.Roi),
                     (int)ResultColumn.SalesPerHour => a.SaleRates.CompareTo(b.SaleRates),
                     (int)ResultColumn.Server => string.Compare(a.BuyServer ?? "", b.BuyServer ?? "", StringComparison.Ordinal),
                     (int)ResultColumn.StackSize => a.StackSize.CompareTo(b.StackSize),
-                    (int)ResultColumn.RegionMedianNQ => a.RegionWeeklyMedianNQ.CompareTo(b.RegionWeeklyMedianNQ),
-                    (int)ResultColumn.RegionSalesNQ => (a.SalesPerWeek ?? 0).CompareTo(b.SalesPerWeek ?? 0),
+                    (int)ResultColumn.RegMedNQ => a.RegionWeeklyMedianNQ.CompareTo(b.RegionWeeklyMedianNQ),
+                    (int)ResultColumn.RegAvgNQ => a.RegionWeeklyAverageNQ.CompareTo(b.RegionWeeklyAverageNQ),
+                    (int)ResultColumn.RegSalesNQ => (a.SalesPerWeek ?? 0).CompareTo(b.SalesPerWeek ?? 0),
+                    (int)ResultColumn.RegQtyNQ => a.RegionWeeklyQuantitySoldNQ.CompareTo(b.RegionWeeklyQuantitySoldNQ),
+                    (int)ResultColumn.RegMedHQ => a.RegionWeeklyMedianHQ.CompareTo(b.RegionWeeklyMedianHQ),
+                    (int)ResultColumn.RegAvgHQ => a.RegionWeeklyAverageHQ.CompareTo(b.RegionWeeklyAverageHQ),
+                    (int)ResultColumn.RegSalesHQ => a.RegionWeeklySalesAmountHQ.CompareTo(b.RegionWeeklySalesAmountHQ),
+                    (int)ResultColumn.RegQtyHQ => a.RegionWeeklyQuantitySoldHQ.CompareTo(b.RegionWeeklyQuantitySoldHQ),
                     _ => 0
                 };
                 return c * dir;
