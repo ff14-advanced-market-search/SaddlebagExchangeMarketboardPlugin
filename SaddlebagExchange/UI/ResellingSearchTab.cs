@@ -31,6 +31,8 @@ namespace SaddlebagExchange.UI
         private const int SearchBufferSize = 128;
         private readonly byte[] _searchBuffer = new byte[SearchBufferSize];
         private int _tableIdCounter;
+        private static string? _copyNotificationText;
+        private static DateTime _copyNotificationUntil;
         private readonly List<int> _columnOrder = new();
         private readonly bool[] _columnVisible = new bool[(int)ResultColumn._Count];
 
@@ -251,12 +253,17 @@ namespace SaddlebagExchange.UI
                    || row.ItemId.ToString().Contains(term, comparison);
         }
 
-        private static void SetClipboardText(string? text)
+        private static void SetClipboardText(string? text, string? notificationMessage = null)
         {
             if (string.IsNullOrEmpty(text)) return;
             try
             {
                 ClipboardHelper.SetText(text);
+                if (!string.IsNullOrEmpty(notificationMessage))
+                {
+                    _copyNotificationText = notificationMessage;
+                    _copyNotificationUntil = DateTime.UtcNow + TimeSpan.FromSeconds(2);
+                }
             }
             catch
             {
@@ -384,6 +391,13 @@ namespace SaddlebagExchange.UI
                 ? $"Results: {results.Count} items (click header to sort, scroll horizontally for more columns)"
                 : $"Results: {results.Count} items ({filtered.Count} matching)";
             ImGui.Text(countText);
+            ImGui.Text("Click an item name to copy it to the clipboard.");
+            if (_copyNotificationText != null && DateTime.UtcNow < _copyNotificationUntil)
+            {
+                ImGui.PushStyleColor(ImGuiCol.Text, new System.Numerics.Vector4(0.4f, 1f, 0.4f, 1f));
+                ImGui.Text(_copyNotificationText);
+                ImGui.PopStyleColor();
+            }
             if (ImGui.Button("Columns"))
                 _showColumnsPopup = true;
             ImGui.SameLine();
@@ -502,7 +516,7 @@ namespace SaddlebagExchange.UI
                 case ResultColumn.ItemName:
                     string name = row.ItemName ?? row.ItemId.ToString();
                     if (ImGui.Selectable(name, false, ImGuiSelectableFlags.None, System.Numerics.Vector2.Zero))
-                        SetClipboardText(name);
+                        SetClipboardText(name, "Item name copied to clipboard");
                     break;
                 case ResultColumn.ProfitAmount:
                     ImGui.Text(row.Profit >= 999_999_999 ? "∞" : row.Profit.ToString("N0"));
