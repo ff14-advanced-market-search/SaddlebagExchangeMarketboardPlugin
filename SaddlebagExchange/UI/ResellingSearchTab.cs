@@ -27,6 +27,8 @@ namespace SaddlebagExchange.UI
         private bool _sortAscending = true;
         private bool _resultsWindowOpen;
         private bool _showColumnsPopup;
+        private const int SearchBufferSize = 128;
+        private readonly byte[] _searchBuffer = new byte[SearchBufferSize];
         private int _tableIdCounter;
         private readonly List<int> _columnOrder = new();
         private readonly bool[] _columnVisible = new bool[(int)ResultColumn._Count];
@@ -37,17 +39,17 @@ namespace SaddlebagExchange.UI
             (int)ResultColumn.Saddlebag,
             (int)ResultColumn.Universalis,
             (int)ResultColumn.Vendor,
-            (int)ResultColumn.ProfitAmount,
-            (int)ResultColumn.AvgPpu,
-            (int)ResultColumn.HomePrice,
-            (int)ResultColumn.HomeUpdated,
-            (int)ResultColumn.LowestPpu,
-            (int)ResultColumn.LowestUpdated,
-            (int)ResultColumn.ProfitPercent,
-            (int)ResultColumn.Roi,
-            (int)ResultColumn.SalesPerHour,
             (int)ResultColumn.Server,
+            (int)ResultColumn.HomePrice,
+            (int)ResultColumn.LowestPpu,
+            (int)ResultColumn.ProfitAmount,
+            (int)ResultColumn.SalesPerHour,
+            (int)ResultColumn.AvgPpu,
+            (int)ResultColumn.Roi,
+            (int)ResultColumn.ProfitPercent,
             (int)ResultColumn.StackSize,
+            (int)ResultColumn.LowestUpdated,
+            (int)ResultColumn.HomeUpdated,
             (int)ResultColumn.RegMedNQ,
             (int)ResultColumn.RegAvgNQ,
             (int)ResultColumn.RegSalesNQ,
@@ -237,6 +239,17 @@ namespace SaddlebagExchange.UI
             }
         }
 
+        private static bool MatchesSearch(ResellingResultItem row, string search)
+        {
+            if (string.IsNullOrWhiteSpace(search)) return true;
+            var term = search.Trim();
+            var comparison = StringComparison.OrdinalIgnoreCase;
+            return (row.ItemName != null && row.ItemName.Contains(term, comparison))
+                   || (row.BuyServer != null && row.BuyServer.Contains(term, comparison))
+                   || (row.NpcVendorInfo != null && row.NpcVendorInfo.Contains(term, comparison))
+                   || row.ItemId.ToString().Contains(term, comparison);
+        }
+
         private static void OpenUrl(string? url)
         {
             if (string.IsNullOrEmpty(url)) return;
@@ -346,7 +359,18 @@ namespace SaddlebagExchange.UI
                 return;
             }
 
-            ImGui.Text($"Results: {results.Count} items (click header to sort, scroll horizontally for more columns)");
+            string searchFilter = System.Text.Encoding.UTF8.GetString(_searchBuffer).TrimEnd('\0');
+            var sorted = SortResults(results);
+            var filtered = string.IsNullOrWhiteSpace(searchFilter)
+                ? sorted
+                : sorted.Where(r => MatchesSearch(r, searchFilter)).ToList();
+            if (ImGui.InputText("Search", _searchBuffer, ImGuiInputTextFlags.None))
+            { }
+            ImGui.SameLine();
+            string countText = string.IsNullOrWhiteSpace(searchFilter)
+                ? $"Results: {results.Count} items (click header to sort, scroll horizontally for more columns)"
+                : $"Results: {results.Count} items ({filtered.Count} matching)";
+            ImGui.Text(countText);
             if (ImGui.Button("Columns"))
                 _showColumnsPopup = true;
             ImGui.SameLine();
@@ -376,10 +400,9 @@ namespace SaddlebagExchange.UI
                 float defaultW = GetDefaultColumnWidth(colId);
                 ImGui.TableSetupColumn(GetColumnHeader(colId), ImGuiTableColumnFlags.WidthFixed, defaultW, (uint)colId);
             }
+            ImGui.TableSetupScrollFreeze(0, 1);
 
-            var sorted = SortResults(results);
-
-            ImGui.TableNextRow();
+            ImGui.TableNextRow(ImGuiTableRowFlags.Headers);
             foreach (int colId in visibleCols)
             {
                 ImGui.TableNextColumn();
@@ -408,7 +431,7 @@ namespace SaddlebagExchange.UI
             }
 
             int rowIndex = 0;
-            foreach (var row in sorted)
+            foreach (var row in filtered)
             {
                 ImGui.PushID(rowIndex);
                 ImGui.TableNextRow();
