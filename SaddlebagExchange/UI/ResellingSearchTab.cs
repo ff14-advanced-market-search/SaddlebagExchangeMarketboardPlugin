@@ -25,6 +25,24 @@ namespace SaddlebagExchange.UI
         private string _errorMessage = string.Empty;
         private int _sortColumnIndex = -1;
         private bool _sortAscending = true;
+        private bool _resultsWindowOpen;
+        private bool _showColumnsPopup;
+        private readonly List<int> _columnOrder = new();
+        private readonly bool[] _columnVisible = new bool[(int)ResultColumn._Count];
+
+        private void EnsureColumnState()
+        {
+            const int n = (int)ResultColumn._Count;
+            if (_columnOrder.Count != n)
+            {
+                _columnOrder.Clear();
+                for (int i = 0; i < n; i++)
+                {
+                    _columnOrder.Add(i);
+                    _columnVisible[i] = true;
+                }
+            }
+        }
 
         private static ResellingParams GetDefaultParams() => new()
         {
@@ -183,7 +201,12 @@ namespace SaddlebagExchange.UI
                 return;
             }
 
-            DrawResultsTable(results);
+            _resultsWindowOpen = true;
+            if (ImGui.Begin("Saddlebag Exchange - Results", ref _resultsWindowOpen, ImGuiWindowFlags.None))
+            {
+                DrawResultsTable(results);
+                ImGui.End();
+            }
         }
 
         private static void OpenUrl(string? url)
@@ -287,54 +310,50 @@ namespace SaddlebagExchange.UI
 
         private void DrawResultsTable(List<ResellingResultItem> results)
         {
+            EnsureColumnState();
+            var visibleCols = _columnOrder.Where(i => _columnVisible[i]).ToList();
+            if (visibleCols.Count == 0)
+            {
+                ImGui.Text("No columns visible. Use Columns to show some.");
+                return;
+            }
+
             ImGui.Text($"Results: {results.Count} items (click header to sort, scroll horizontally for more columns)");
+            if (ImGui.Button("Columns"))
+                _showColumnsPopup = true;
+            ImGui.SameLine();
+            if (ImGui.Button("Reset columns"))
+            {
+                for (int i = 0; i < _columnOrder.Count; i++)
+                {
+                    _columnOrder[i] = i;
+                    _columnVisible[i] = true;
+                }
+            }
             ImGui.Spacing();
 
-            const int colCount = (int)ResultColumn._Count;
             var tableSize = new System.Numerics.Vector2(-1, 320);
-            if (!ImGui.BeginTable("ResellingResults", colCount, ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg | ImGuiTableFlags.Resizable | ImGuiTableFlags.ScrollY | ImGuiTableFlags.ScrollX, tableSize))
+            if (!ImGui.BeginTable("ResellingResults", visibleCols.Count, ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg | ImGuiTableFlags.Resizable | ImGuiTableFlags.ScrollY | ImGuiTableFlags.ScrollX, tableSize))
                 return;
 
-            ImGui.TableSetupColumn("Item Name", ImGuiTableColumnFlags.WidthStretch, 120, (int)ResultColumn.ItemName);
-            ImGui.TableSetupColumn("Profit", ImGuiTableColumnFlags.WidthFixed, 72, (int)ResultColumn.ProfitAmount);
-            ImGui.TableSetupColumn("Avg PPU", ImGuiTableColumnFlags.WidthFixed, 72, (int)ResultColumn.AvgPpu);
-            ImGui.TableSetupColumn("Home", ImGuiTableColumnFlags.WidthFixed, 64, (int)ResultColumn.HomePrice);
-            ImGui.TableSetupColumn("Home Upd", ImGuiTableColumnFlags.WidthFixed, 64, (int)ResultColumn.HomeUpdated);
-            ImGui.TableSetupColumn("Low PPU", ImGuiTableColumnFlags.WidthFixed, 64, (int)ResultColumn.LowestPpu);
-            ImGui.TableSetupColumn("Low Upd", ImGuiTableColumnFlags.WidthFixed, 64, (int)ResultColumn.LowestUpdated);
-            ImGui.TableSetupColumn("Profit %", ImGuiTableColumnFlags.WidthFixed, 56, (int)ResultColumn.ProfitPercent);
-            ImGui.TableSetupColumn("ROI %", ImGuiTableColumnFlags.WidthFixed, 48, (int)ResultColumn.Roi);
-            ImGui.TableSetupColumn("Sales/hr", ImGuiTableColumnFlags.WidthFixed, 56, (int)ResultColumn.SalesPerHour);
-            ImGui.TableSetupColumn("Server", ImGuiTableColumnFlags.WidthFixed, 90, (int)ResultColumn.Server);
-            ImGui.TableSetupColumn("Stack", ImGuiTableColumnFlags.WidthFixed, 40, (int)ResultColumn.StackSize);
-            ImGui.TableSetupColumn("Univ", ImGuiTableColumnFlags.WidthFixed, 36, (int)ResultColumn.Universalis);
-            ImGui.TableSetupColumn("Vend", ImGuiTableColumnFlags.WidthFixed, 36, (int)ResultColumn.Vendor);
-            ImGui.TableSetupColumn("Data", ImGuiTableColumnFlags.WidthFixed, 36, (int)ResultColumn.Saddlebag);
-            ImGui.TableSetupColumn("Med NQ", ImGuiTableColumnFlags.WidthFixed, 60, (int)ResultColumn.RegMedNQ);
-            ImGui.TableSetupColumn("Avg NQ", ImGuiTableColumnFlags.WidthFixed, 60, (int)ResultColumn.RegAvgNQ);
-            ImGui.TableSetupColumn("Sales NQ", ImGuiTableColumnFlags.WidthFixed, 60, (int)ResultColumn.RegSalesNQ);
-            ImGui.TableSetupColumn("Qty NQ", ImGuiTableColumnFlags.WidthFixed, 52, (int)ResultColumn.RegQtyNQ);
-            ImGui.TableSetupColumn("Med HQ", ImGuiTableColumnFlags.WidthFixed, 60, (int)ResultColumn.RegMedHQ);
-            ImGui.TableSetupColumn("Avg HQ", ImGuiTableColumnFlags.WidthFixed, 60, (int)ResultColumn.RegAvgHQ);
-            ImGui.TableSetupColumn("Sales HQ", ImGuiTableColumnFlags.WidthFixed, 60, (int)ResultColumn.RegSalesHQ);
-            ImGui.TableSetupColumn("Qty HQ", ImGuiTableColumnFlags.WidthFixed, 52, (int)ResultColumn.RegQtyHQ);
+            foreach (int colId in visibleCols)
+                ImGui.TableSetupColumn(GetColumnHeader(colId), colId == (int)ResultColumn.ItemName ? ImGuiTableColumnFlags.WidthStretch : ImGuiTableColumnFlags.WidthFixed, colId == (int)ResultColumn.ItemName ? 120 : 80, (uint)colId);
 
             var sorted = SortResults(results);
 
-            // Draw sortable header row (click to sort)
             ImGui.TableNextRow();
-            for (int c = 0; c < colCount; c++)
+            foreach (int colId in visibleCols)
             {
                 ImGui.TableNextColumn();
-                bool active = _sortColumnIndex == c;
-                string label = GetColumnHeader(c) + (active ? (_sortAscending ? " ▲" : " ▼") : "");
+                bool active = _sortColumnIndex == colId;
+                string label = GetColumnHeader(colId) + (active ? (_sortAscending ? " ▲" : " ▼") : "");
                 if (ImGui.Selectable(label, active, ImGuiSelectableFlags.None, System.Numerics.Vector2.Zero))
                 {
-                    if (_sortColumnIndex == c)
+                    if (_sortColumnIndex == colId)
                         _sortAscending = !_sortAscending;
                     else
                     {
-                        _sortColumnIndex = c;
+                        _sortColumnIndex = colId;
                         _sortAscending = true;
                     }
                 }
@@ -345,59 +364,131 @@ namespace SaddlebagExchange.UI
             {
                 ImGui.PushID(rowIndex);
                 ImGui.TableNextRow();
-                ImGui.TableNextColumn();
-                ImGui.Text(row.ItemName ?? row.ItemId.ToString());
-                ImGui.TableNextColumn();
-                ImGui.Text(row.Profit >= 999_999_999 ? "∞" : row.Profit.ToString("N0"));
-                ImGui.TableNextColumn();
-                ImGui.Text(row.SellPrice.ToString("N0"));
-                ImGui.TableNextColumn();
-                ImGui.Text(row.HomeServerPrice == 0 ? "-" : row.HomeServerPrice.ToString("N0"));
-                ImGui.TableNextColumn();
-                ImGui.Text(FormatTimestamp(row.HomeUpdateTime));
-                ImGui.TableNextColumn();
-                ImGui.Text(row.BuyPrice.ToString("N0"));
-                ImGui.TableNextColumn();
-                ImGui.Text(FormatTimestamp(row.UpdateTime));
-                ImGui.TableNextColumn();
-                ImGui.Text(row.ProfitPercent >= 999_999_999 ? "∞" : row.ProfitPercent.ToString("F1"));
-                ImGui.TableNextColumn();
-                ImGui.Text(row.Roi.ToString("F1"));
-                ImGui.TableNextColumn();
-                ImGui.Text(row.SaleRates.ToString("F4"));
-                ImGui.TableNextColumn();
-                ImGui.Text(row.BuyServer ?? "-");
-                ImGui.TableNextColumn();
-                ImGui.Text(row.StackSize.ToString());
-                ImGui.TableNextColumn();
-                if (ImGui.SmallButton("U")) OpenUrl(row.UniversalisUrl);
-                ImGui.TableNextColumn();
-                if (!string.IsNullOrEmpty(row.NpcVendorInfo))
-                { if (ImGui.SmallButton("V")) OpenUrl(row.NpcVendorInfo); }
-                else ImGui.Text("-");
-                ImGui.TableNextColumn();
-                if (ImGui.SmallButton("S")) OpenUrl(row.SaddlebagUrl);
-                ImGui.TableNextColumn();
-                ImGui.Text(row.RegionWeeklyMedianNQ.ToString("N0"));
-                ImGui.TableNextColumn();
-                ImGui.Text(row.RegionWeeklyAverageNQ.ToString("N0"));
-                ImGui.TableNextColumn();
-                ImGui.Text((row.SalesPerWeek ?? 0).ToString());
-                ImGui.TableNextColumn();
-                ImGui.Text(row.RegionWeeklyQuantitySoldNQ.ToString());
-                ImGui.TableNextColumn();
-                ImGui.Text(row.RegionWeeklyMedianHQ.ToString("N0"));
-                ImGui.TableNextColumn();
-                ImGui.Text(row.RegionWeeklyAverageHQ.ToString("N0"));
-                ImGui.TableNextColumn();
-                ImGui.Text(row.RegionWeeklySalesAmountHQ.ToString());
-                ImGui.TableNextColumn();
-                ImGui.Text(row.RegionWeeklyQuantitySoldHQ.ToString());
+                foreach (int colId in visibleCols)
+                {
+                    ImGui.TableNextColumn();
+                    DrawCell(row, colId);
+                }
                 ImGui.PopID();
                 rowIndex++;
             }
 
             ImGui.EndTable();
+
+            if (_showColumnsPopup)
+            {
+                ImGui.OpenPopup("Column options");
+                _showColumnsPopup = false;
+            }
+            if (ImGui.BeginPopup("Column options"))
+            {
+                ImGui.Text("Show / hide and reorder columns");
+                ImGui.Separator();
+                for (int i = 0; i < _columnOrder.Count; i++)
+                {
+                    int colId = _columnOrder[i];
+                    ImGui.PushID(colId);
+                    bool vis = _columnVisible[colId];
+                    if (ImGui.Checkbox("##vis", ref vis))
+                        _columnVisible[colId] = vis;
+                    ImGui.SameLine();
+                    ImGui.Text(GetColumnHeader(colId));
+                    ImGui.SameLine();
+                    if (ImGui.SmallButton("Up") && i > 0)
+                    {
+                        (_columnOrder[i], _columnOrder[i - 1]) = (_columnOrder[i - 1], _columnOrder[i]);
+                    }
+                    ImGui.SameLine();
+                    if (ImGui.SmallButton("Down") && i < _columnOrder.Count - 1)
+                    {
+                        (_columnOrder[i], _columnOrder[i + 1]) = (_columnOrder[i + 1], _columnOrder[i]);
+                    }
+                    ImGui.PopID();
+                }
+                if (ImGui.Button("Close"))
+                    ImGui.CloseCurrentPopup();
+                ImGui.EndPopup();
+            }
+        }
+
+        private static void DrawCell(ResellingResultItem row, int colId)
+        {
+            switch ((ResultColumn)colId)
+            {
+                case ResultColumn.ItemName:
+                    ImGui.Text(row.ItemName ?? row.ItemId.ToString());
+                    break;
+                case ResultColumn.ProfitAmount:
+                    ImGui.Text(row.Profit >= 999_999_999 ? "∞" : row.Profit.ToString("N0"));
+                    break;
+                case ResultColumn.AvgPpu:
+                    ImGui.Text(row.SellPrice.ToString("N0"));
+                    break;
+                case ResultColumn.HomePrice:
+                    ImGui.Text(row.HomeServerPrice == 0 ? "-" : row.HomeServerPrice.ToString("N0"));
+                    break;
+                case ResultColumn.HomeUpdated:
+                    ImGui.Text(FormatTimestamp(row.HomeUpdateTime));
+                    break;
+                case ResultColumn.LowestPpu:
+                    ImGui.Text(row.BuyPrice.ToString("N0"));
+                    break;
+                case ResultColumn.LowestUpdated:
+                    ImGui.Text(FormatTimestamp(row.UpdateTime));
+                    break;
+                case ResultColumn.ProfitPercent:
+                    ImGui.Text(row.ProfitPercent >= 999_999_999 ? "∞" : row.ProfitPercent.ToString("F1"));
+                    break;
+                case ResultColumn.Roi:
+                    ImGui.Text(row.Roi.ToString("F1"));
+                    break;
+                case ResultColumn.SalesPerHour:
+                    ImGui.Text(row.SaleRates.ToString("F4"));
+                    break;
+                case ResultColumn.Server:
+                    ImGui.Text(row.BuyServer ?? "-");
+                    break;
+                case ResultColumn.StackSize:
+                    ImGui.Text(row.StackSize.ToString());
+                    break;
+                case ResultColumn.Universalis:
+                    if (ImGui.SmallButton("U")) OpenUrl(row.UniversalisUrl);
+                    break;
+                case ResultColumn.Vendor:
+                    if (!string.IsNullOrEmpty(row.NpcVendorInfo))
+                    { if (ImGui.SmallButton("V")) OpenUrl(row.NpcVendorInfo); }
+                    else ImGui.Text("-");
+                    break;
+                case ResultColumn.Saddlebag:
+                    if (ImGui.SmallButton("S")) OpenUrl(row.SaddlebagUrl);
+                    break;
+                case ResultColumn.RegMedNQ:
+                    ImGui.Text(row.RegionWeeklyMedianNQ.ToString("N0"));
+                    break;
+                case ResultColumn.RegAvgNQ:
+                    ImGui.Text(row.RegionWeeklyAverageNQ.ToString("N0"));
+                    break;
+                case ResultColumn.RegSalesNQ:
+                    ImGui.Text((row.SalesPerWeek ?? 0).ToString());
+                    break;
+                case ResultColumn.RegQtyNQ:
+                    ImGui.Text(row.RegionWeeklyQuantitySoldNQ.ToString());
+                    break;
+                case ResultColumn.RegMedHQ:
+                    ImGui.Text(row.RegionWeeklyMedianHQ.ToString("N0"));
+                    break;
+                case ResultColumn.RegAvgHQ:
+                    ImGui.Text(row.RegionWeeklyAverageHQ.ToString("N0"));
+                    break;
+                case ResultColumn.RegSalesHQ:
+                    ImGui.Text(row.RegionWeeklySalesAmountHQ.ToString());
+                    break;
+                case ResultColumn.RegQtyHQ:
+                    ImGui.Text(row.RegionWeeklyQuantitySoldHQ.ToString());
+                    break;
+                default:
+                    break;
+            }
         }
 
         private static string GetColumnHeader(int column)
@@ -405,28 +496,28 @@ namespace SaddlebagExchange.UI
             return column switch
             {
                 (int)ResultColumn.ItemName => "Item Name",
-                (int)ResultColumn.ProfitAmount => "Profit",
-                (int)ResultColumn.AvgPpu => "Avg PPU",
-                (int)ResultColumn.HomePrice => "Home",
-                (int)ResultColumn.HomeUpdated => "Home Upd",
-                (int)ResultColumn.LowestPpu => "Low PPU",
-                (int)ResultColumn.LowestUpdated => "Low Upd",
-                (int)ResultColumn.ProfitPercent => "Profit %",
-                (int)ResultColumn.Roi => "ROI %",
-                (int)ResultColumn.SalesPerHour => "Sales/hr",
-                (int)ResultColumn.Server => "Server",
-                (int)ResultColumn.StackSize => "Stack",
-                (int)ResultColumn.Universalis => "Univ",
-                (int)ResultColumn.Vendor => "Vend",
-                (int)ResultColumn.Saddlebag => "Data",
-                (int)ResultColumn.RegMedNQ => "Med NQ",
-                (int)ResultColumn.RegAvgNQ => "Avg NQ",
-                (int)ResultColumn.RegSalesNQ => "Sales NQ",
-                (int)ResultColumn.RegQtyNQ => "Qty NQ",
-                (int)ResultColumn.RegMedHQ => "Med HQ",
-                (int)ResultColumn.RegAvgHQ => "Avg HQ",
-                (int)ResultColumn.RegSalesHQ => "Sales HQ",
-                (int)ResultColumn.RegQtyHQ => "Qty HQ",
+                (int)ResultColumn.ProfitAmount => "Profit Amount",
+                (int)ResultColumn.AvgPpu => "Average Price Per Unit",
+                (int)ResultColumn.HomePrice => "Home Server Price",
+                (int)ResultColumn.HomeUpdated => "Home Server Info Last Updated At",
+                (int)ResultColumn.LowestPpu => "Lowest Price Per Unit",
+                (int)ResultColumn.LowestUpdated => "Lowest Price Last Update Time",
+                (int)ResultColumn.ProfitPercent => "Profit Percentage",
+                (int)ResultColumn.Roi => "Return on Investment",
+                (int)ResultColumn.SalesPerHour => "Average Sales Per Hour",
+                (int)ResultColumn.Server => "Lowest Price Server",
+                (int)ResultColumn.StackSize => "Lowest Price Stack Size",
+                (int)ResultColumn.Universalis => "Universalis Link",
+                (int)ResultColumn.Vendor => "NPC Vendor Info",
+                (int)ResultColumn.Saddlebag => "Item Data",
+                (int)ResultColumn.RegMedNQ => "Region Weekly Median NQ",
+                (int)ResultColumn.RegAvgNQ => "Region Weekly Average NQ",
+                (int)ResultColumn.RegSalesNQ => "Region Weekly Sales Amount NQ",
+                (int)ResultColumn.RegQtyNQ => "Region Weekly Quantity Sold NQ",
+                (int)ResultColumn.RegMedHQ => "Region Weekly Median HQ",
+                (int)ResultColumn.RegAvgHQ => "Region Weekly Average HQ",
+                (int)ResultColumn.RegSalesHQ => "Region Weekly Sales Amount HQ",
+                (int)ResultColumn.RegQtyHQ => "Region Weekly Quantity Sold HQ",
                 _ => ""
             };
         }
