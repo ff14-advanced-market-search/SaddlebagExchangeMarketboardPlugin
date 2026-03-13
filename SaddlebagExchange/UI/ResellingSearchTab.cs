@@ -366,7 +366,6 @@ namespace SaddlebagExchange.UI
                 : sorted.Where(r => MatchesSearch(r, searchFilter)).ToList();
             if (ImGui.InputText("Search", _searchBuffer, ImGuiInputTextFlags.None))
             { }
-            ImGui.SameLine();
             string countText = string.IsNullOrWhiteSpace(searchFilter)
                 ? $"Results: {results.Count} items (click header to sort, scroll horizontally for more columns)"
                 : $"Results: {results.Count} items ({filtered.Count} matching)";
