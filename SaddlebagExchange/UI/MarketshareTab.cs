@@ -18,7 +18,14 @@ namespace SaddlebagExchange.UI
 
         private readonly SaddlebagApiService _api = new();
         private readonly object _scanLock = new();
-        private MarketshareParams _params = new();
+        private MarketshareParams _params = new()
+        {
+            TimePeriod = 168,
+            SalesAmount = 3,
+            AveragePrice = 10000,
+            Filters = new[] { 0 },
+            SortBy = "marketValue"
+        };
         private List<MarketshareResultItem> _scanResults = new();
         private bool _scanInProgress;
         private string _selectedDataCenter = string.Empty;
