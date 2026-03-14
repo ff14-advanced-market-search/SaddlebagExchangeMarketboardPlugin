@@ -16,7 +16,7 @@
     <LoadRequiredState>0</LoadRequiredState>
     <RepoUrl>https://github.com/ff14-advanced-market-search/SaddlebagExchangeMarketboardPlugin</RepoUrl>
     <Changelog>Initial release.</Changelog>
-    <Tags>marketboard;arbitrage;economy;gil;crafting;money;trading;flipping;materia</Tags>
+    <Tags>marketboard;economy;gil;crafting;money;trading;flipping</Tags>
   </PropertyGroup>
 
   <!-- Icon shown in /xlplugins for dev plugins (icon.png next to DLL) -->
@@ -27,7 +27,7 @@
   <!-- Generate manifest.json from project (single source of truth). -->
   <Target Name="GenerateManifest" AfterTargets="Build">
     <PropertyGroup>
-      <_TagsJson>"marketboard", "arbitrage", "economy", "gil", "crafting", "money", "trading", "flipping", "materia"</_TagsJson>
+      <_TagsJson>"marketboard", "economy", "gil", "crafting", "money", "trading", "flipping"</_TagsJson>
     </PropertyGroup>
     <ItemGroup>
       <_ManifestLine Include="{"/>
