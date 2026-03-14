@@ -242,11 +242,11 @@ namespace SaddlebagExchange.UI
             if (ImGui.Button($"Filters ({filterCount})"))
                 _showFiltersPopup = true;
             if (ImGui.IsItemHovered())
-                ImGui.SetTooltip("Choose which item categories to include.\nEach option is sent as a filter ID to the API.");
+                ImGui.SetTooltip("You can select multiple categories or select all for all types of items.");
             ImGui.SameLine();
             ImGui.Text("Item categories to include in search");
             if (ImGui.IsItemHovered())
-                ImGui.SetTooltip("Choose which item categories to include.\nEach option is sent as a filter ID to the API.");
+                ImGui.SetTooltip("You can select multiple categories or select all for all types of items.");
 
             DrawHomeServerCombo();
 
@@ -446,7 +446,7 @@ namespace SaddlebagExchange.UI
             int count = _params.Filters?.Length ?? 0;
             ImGui.Text($"Filters Selected: {count}");
             if (ImGui.IsItemHovered())
-                ImGui.SetTooltip("Number of category filters applied.\nEach selected checkbox adds its ID to the search request.");
+                ImGui.SetTooltip("Number of categories currently selected.");
             ImGui.Separator();
             if (ImGui.BeginChild("##filter_list", new System.Numerics.Vector2(320, 400), true))
             {

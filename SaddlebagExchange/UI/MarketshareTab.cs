@@ -183,11 +183,11 @@ namespace SaddlebagExchange.UI
             if (ImGui.Button($"Filters ({filterCount})"))
                 _showFiltersPopup = true;
             if (ImGui.IsItemHovered())
-                ImGui.SetTooltip("Choose which item categories to include.\nEach option is sent as a filter ID to the API.");
+                ImGui.SetTooltip("You can select multiple categories or select all for all types of items.");
             ImGui.SameLine();
             ImGui.Text("Item categories");
             if (ImGui.IsItemHovered())
-                ImGui.SetTooltip("Choose which item categories to include.\nEach option is sent as a filter ID to the API.");
+                ImGui.SetTooltip("You can select multiple categories or select all for all types of items.");
 
             int sortIndex = Array.FindIndex(SortByOptions, o => o.Value == _params.SortBy);
             if (sortIndex < 0) sortIndex = 0;
@@ -583,16 +583,19 @@ namespace SaddlebagExchange.UI
 
         private void ApplyPreset(MarketshareParams p)
         {
-            _params.Server = p.Server;
+            // Preserve current server when preset doesn't specify one (presets use Server = string.Empty)
+            if (!string.IsNullOrEmpty(p.Server))
+            {
+                _params.Server = p.Server;
+                var dc = WorldList.GetDataCenterForWorld(p.Server);
+                if (!string.IsNullOrEmpty(dc))
+                    _selectedDataCenter = dc;
+            }
             _params.TimePeriod = p.TimePeriod;
             _params.SalesAmount = p.SalesAmount;
             _params.AveragePrice = p.AveragePrice;
             _params.Filters = p.Filters.ToArray();
             _params.SortBy = p.SortBy;
-            if (!string.IsNullOrEmpty(p.Server))
-            {
-                _selectedDataCenter = WorldList.GetDataCenterForWorld(p.Server) ?? string.Empty;
-            }
         }
 
         private static void DrawHelpMarker(string tooltip)

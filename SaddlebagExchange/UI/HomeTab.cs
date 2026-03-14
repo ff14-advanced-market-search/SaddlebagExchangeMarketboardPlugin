@@ -78,7 +78,7 @@ namespace SaddlebagExchange.UI
             ImGui.SameLine();
             ImGui.TextDisabled("(?)");
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-                ImGui.SetTooltip("This world is used as the home server for Reselling Search and Market Overview. It will be pre-filled on every search.");
+                ImGui.SetTooltip("Default home server for all searches. Pre-filled whenever you run a search.");
             ImGui.Spacing();
 
             string currentWorld = getDefaultHomeServer();
