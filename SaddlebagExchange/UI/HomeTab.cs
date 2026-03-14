@@ -1,13 +1,8 @@
 using System;
-using System.IO;
-using System.Reflection;
 using Dalamud.Bindings.ImGui;
-using Dalamud.Interface.Textures;
-using Dalamud.Interface.Textures.TextureWraps;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Plugin;
-using Dalamud.Plugin.Services;
 using Dalamud.Utility;
 
 namespace SaddlebagExchange.UI
@@ -20,32 +15,11 @@ namespace SaddlebagExchange.UI
         private const string DiscordUrl = "https://discord.gg/9dHx2rEq9F";
         private const string WebsiteUrl = "https://saddlebagexchange.com/wow";
 
-        private ISharedImmediateTexture? _iconTexture;
-        private bool _iconLoadAttempted;
         private string _defaultDc = string.Empty;
 
         public void Draw(IDalamudPluginInterface? pluginInterface, Func<string>? getDefaultHomeServer = null, Action<string>? setDefaultHomeServer = null, Action<int>? onSelectTool = null)
         {
             ImGui.Spacing();
-
-            TryLoadIcon(pluginInterface);
-            if (_iconTexture != null)
-            {
-                try
-                {
-                    var wrap = _iconTexture.GetWrapOrEmpty();
-                    var size = wrap.Size;
-                    if (size.X > 0 && size.Y > 0)
-                    {
-                        float maxSide = 128f * ImGuiHelpers.GlobalScale;
-                        float scale = Math.Min(Math.Min(maxSide / size.X, maxSide / size.Y), 1f);
-                        var displaySize = new System.Numerics.Vector2(size.X * scale, size.Y * scale);
-                        ImGui.Image(wrap.Handle, displaySize);
-                        ImGui.Spacing();
-                    }
-                }
-                catch { /* ignore */ }
-            }
 
             ImGui.Text("Saddlebag Exchange");
             ImGui.Separator();
@@ -198,22 +172,6 @@ namespace SaddlebagExchange.UI
                 }
                 ImGui.EndCombo();
             }
-        }
-
-        private void TryLoadIcon(IDalamudPluginInterface? pluginInterface)
-        {
-            if (_iconLoadAttempted || pluginInterface == null) return;
-            _iconLoadAttempted = true;
-            try
-            {
-                var dir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-                var path = Path.Combine(dir ?? ".", "icon.png");
-                if (!File.Exists(path)) return;
-                var textureProvider = pluginInterface.GetService(typeof(ITextureProvider)) as ITextureProvider;
-                if (textureProvider == null) return;
-                _iconTexture = textureProvider.GetFromFileAbsolute(path);
-            }
-            catch { /* ignore */ }
         }
     }
 }
