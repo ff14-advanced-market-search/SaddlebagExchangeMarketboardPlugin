@@ -1,12 +1,14 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Dalamud.Bindings.ImGui;
+using Dalamud.Interface.Utility;
+using Dalamud.Interface.Utility.Raii;
+using Dalamud.Utility;
 using SaddlebagExchange.Models;
 using SaddlebagExchange.Services;
 
@@ -326,13 +328,7 @@ namespace SaddlebagExchange.UI
         private static void OpenUrl(string? url)
         {
             if (string.IsNullOrEmpty(url)) return;
-            if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || !uri.IsAbsoluteUri)
-                return;
-            try
-            {
-                using var _ = Process.Start(new ProcessStartInfo { FileName = uri.ToString(), UseShellExecute = true });
-            }
-            catch { /* ignore */ }
+            Util.OpenLink(url);
         }
 
         private static string FormatTimestamp(string? ms)
@@ -448,32 +444,10 @@ namespace SaddlebagExchange.UI
             if (ImGui.IsItemHovered())
                 ImGui.SetTooltip("Number of categories currently selected.");
             ImGui.Separator();
-            ImGui.BeginChild("##filter_list", new System.Numerics.Vector2(320, 400), true);
-            var filters = _params.Filters ?? Array.Empty<int>();
-            var filterSet = new HashSet<int>(filters);
-            foreach (var entry in ItemFilterDefs.GetAll())
-            {
-                if (entry.IsHeader)
-                {
-                    ImGui.Spacing();
-                    ImGui.Text(entry.Label);
-                    continue;
-                }
-                int id = entry.Id!.Value;
-                bool isChecked = filterSet.Contains(id);
-                bool isMainCategory = id >= 1 && id <= 7;
-                string label = isMainCategory ? entry.Label : "-- " + entry.Label;
-                if (ImGui.Checkbox(label, ref isChecked))
-                {
-                    var list = filters.ToList();
-                    if (isChecked)
-                        list.Add(id);
-                    else
-                        list.Remove(id);
-                    _params.Filters = list.ToArray();
-                }
-            }
-            ImGui.EndChild();
+            ItemFilterListHelper.RenderFilterList(
+                "##filter_list",
+                () => _params.Filters ?? Array.Empty<int>(),
+                val => _params.Filters = val);
             if (ImGui.Button("Close"))
                 ImGui.CloseCurrentPopup();
             ImGui.EndPopup();

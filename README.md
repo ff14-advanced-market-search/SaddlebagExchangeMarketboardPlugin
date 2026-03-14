@@ -29,12 +29,12 @@ Slash command to open window:
 
 Updates are delivered through the same repo; the installer will use the latest release from the [releases page](https://github.com/ff14-advanced-market-search/SaddlebagExchangeMarketboardPlugin/releases).
 
-**If install fails:** Restart the game and try again. If it still fails, check the Dalamud log (XIVLauncher → Settings → open the log/data folder, or `%AppData%\XIVLauncher\log`) for the exact error (e.g. download failure, invalid zip, or missing manifest). The release zip should contain a single folder `SaddlebagExchange` with `SaddlebagExchange.dll`, `manifest.json`, and `icon.png` inside it.
+**If install fails:** Restart the game and try again. If it still fails, check the Dalamud log (XIVLauncher → Settings → open the log/data folder, or `%AppData%\XIVLauncher\log`) for the exact error (e.g. download failure, invalid zip, or missing manifest). The release zip has **SaddlebagExchange.dll**, **manifest.json**, and **icon.png** at the archive root (no nested folder).
 
 ## Creating a release
 
-1. **Commit and push** all changes (workflow, repo.json, manifest, code).
-2. **Set version** in `SaddlebagExchange/manifest.json` → `AssemblyVersion` (e.g. `"1.0.0"`). Optionally update `repo.json` → `AssemblyVersion` and `LastUpdated` (Unix timestamp) so the plugin list shows the right version.
+1. **Commit and push** all changes (workflow, repo.json, project, code).
+2. **Set version** in `SaddlebagExchange/SaddlebagExchange.csproj` → `AssemblyVersion` (e.g. `1.0.0`). Optionally update `repo.json` → `AssemblyVersion` and `LastUpdated` (Unix timestamp) so the plugin list shows the right version. API level is derived from the SDK in the project; when you upgrade the Dalamud SDK (e.g. to 15.x), update `repo.json` → `DalamudApiLevel` to match the SDK major version.
 3. **Create and push the tag** (use the same version number):
    ```bash
    git tag v1.0.0
@@ -78,7 +78,7 @@ ffxiv-plugin/
 ├── SaddlebagExchange/
 │   ├── SaddlebagExchange.csproj
 │   ├── Plugin.cs
-│   └── manifest.json
+│   └── ... (manifest.json is generated to bin/<Configuration>/net10.0/)
 └── README.md
 ```
 
@@ -133,10 +133,10 @@ No need to copy the DLL by hand; the post-build copy handles it.
    ```
    Example: `C:\Users\<You>\AppData\Roaming\XIVLauncher\devPlugins\SaddlebagExchange`
 
-2. Either build once (post-build will copy files) or copy manually:
-   - `SaddlebagExchange/bin/Debug/net10.0/SaddlebagExchange.dll`
-   - `SaddlebagExchange/manifest.json`
-   - `SaddlebagExchange/Assets/icon.png` (optional)
+2. Either build once (post-build will copy files) or copy manually from `SaddlebagExchange/bin/Debug/net10.0/`:
+   - `SaddlebagExchange.dll`
+   - `manifest.json`
+   - `icon.png` (optional)
 
 ## Load in game
 

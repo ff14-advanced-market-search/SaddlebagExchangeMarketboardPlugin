@@ -2,7 +2,7 @@ using System;
 using Dalamud.Plugin;
 using Dalamud.Game.Command;
 using Dalamud.Plugin.Services;
-using Dalamud.Bindings.ImGui;
+using Dalamud.Interface.Windowing;
 using SaddlebagExchange.UI;
 
 namespace SaddlebagExchange
@@ -11,44 +11,38 @@ namespace SaddlebagExchange
     {
         public string Name => "Saddlebag Exchange";
 
-        private bool _windowOpen;
+        private readonly WindowSystem _windowSystem;
         private readonly MainWindow _mainWindow;
+        private readonly Action _onDraw;
+        private readonly Action _onOpenUi;
         private IDalamudPluginInterface? _pi;
-        private ICommandManager? _cmd;
-        private bool _commandsRegistered;
-        private readonly Action _onOpenMainUi;
-        private readonly Action _onOpenConfigUi;
+        private ICommandManager _cmd;
 
-        public Plugin(IDalamudPluginInterface pluginInterface)
+        public Plugin(IDalamudPluginInterface pluginInterface, ICommandManager commandManager)
         {
             _pi = pluginInterface;
+            _cmd = commandManager;
+            _windowSystem = new WindowSystem(Name);
             _mainWindow = new MainWindow(pluginInterface);
-            _onOpenMainUi = () => _windowOpen = true;
-            _onOpenConfigUi = () => _windowOpen = true;
+            _windowSystem.AddWindow(_mainWindow);
+            _onDraw = () => _windowSystem.Draw();
+            _onOpenUi = () => _mainWindow.IsOpen = true;
 
             var uiBuilder = pluginInterface.UiBuilder;
-            uiBuilder.Draw += Draw;
-            uiBuilder.OpenMainUi += _onOpenMainUi;
-            uiBuilder.OpenConfigUi += _onOpenConfigUi;
+            uiBuilder.Draw += _onDraw;
+            uiBuilder.OpenMainUi += _onOpenUi;
+            uiBuilder.OpenConfigUi += _onOpenUi;
 
-            TryRegisterCommands();
-            TrySetDefaultHomeServer(pluginInterface);
-        }
-
-        private void TryRegisterCommands()
-        {
-            if (_pi == null || _commandsRegistered) return;
-            _cmd = _pi.GetService(typeof(ICommandManager)) as ICommandManager;
-            if (_cmd == null) return;
             var help = "Open Saddlebag Exchange window";
             try
             {
                 _cmd.AddHandler("/saddlebag", new CommandInfo(OnCommand) { HelpMessage = help });
                 _cmd.AddHandler("/saddlebagexchange", new CommandInfo(OnCommand) { HelpMessage = help });
                 _cmd.AddHandler("/sbex", new CommandInfo(OnCommand) { HelpMessage = help });
-                _commandsRegistered = true;
             }
             catch { /* ignore if already registered or failed */ }
+
+            TrySetDefaultHomeServer(pluginInterface);
         }
 
         private void TrySetDefaultHomeServer(IDalamudPluginInterface pi)
@@ -59,39 +53,21 @@ namespace SaddlebagExchange
 
         private void OnCommand(string command, string args)
         {
-            _windowOpen = !_windowOpen;
-        }
-
-        public void Draw()
-        {
-            if (!_commandsRegistered)
-                TryRegisterCommands();
-
-            if (!_windowOpen)
-                return;
-
-            if (!ImGui.Begin("Saddlebag Exchange", ref _windowOpen))
-            {
-                ImGui.End();
-                return;
-            }
-
-            _mainWindow.Draw();
-            ImGui.End();
+            _mainWindow.Toggle();
         }
 
         public void Dispose()
         {
             if (_pi == null) return;
             _mainWindow.Dispose();
+            _windowSystem.RemoveAllWindows();
             var uiBuilder = _pi.UiBuilder;
-            uiBuilder.Draw -= Draw;
-            uiBuilder.OpenMainUi -= _onOpenMainUi;
-            uiBuilder.OpenConfigUi -= _onOpenConfigUi;
-            _cmd?.RemoveHandler("/saddlebag");
-            _cmd?.RemoveHandler("/saddlebagexchange");
-            _cmd?.RemoveHandler("/sbex");
-            _cmd = null;
+            uiBuilder.Draw -= _onDraw;
+            uiBuilder.OpenMainUi -= _onOpenUi;
+            uiBuilder.OpenConfigUi -= _onOpenUi;
+            _cmd.RemoveHandler("/saddlebag");
+            _cmd.RemoveHandler("/saddlebagexchange");
+            _cmd.RemoveHandler("/sbex");
             _pi = null;
         }
     }

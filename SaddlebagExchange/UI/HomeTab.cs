@@ -1,10 +1,9 @@
 using System;
-using System.Diagnostics;
-using System.IO;
-using System.Reflection;
-using System.Threading.Tasks;
 using Dalamud.Bindings.ImGui;
+using Dalamud.Interface.Utility;
+using Dalamud.Interface.Utility.Raii;
 using Dalamud.Plugin;
+using Dalamud.Utility;
 
 namespace SaddlebagExchange.UI
 {
@@ -16,32 +15,11 @@ namespace SaddlebagExchange.UI
         private const string DiscordUrl = "https://discord.gg/9dHx2rEq9F";
         private const string WebsiteUrl = "https://saddlebagexchange.com/wow";
 
-        private volatile object? _iconTexture;
-        private bool _iconLoadAttempted;
         private string _defaultDc = string.Empty;
 
         public void Draw(IDalamudPluginInterface? pluginInterface, Func<string>? getDefaultHomeServer = null, Action<string>? setDefaultHomeServer = null, Action<int>? onSelectTool = null)
         {
             ImGui.Spacing();
-
-            TryLoadIcon(pluginInterface);
-            if (_iconTexture != null)
-            {
-                try
-                {
-                    var handle = GetTextureHandle(_iconTexture);
-                    var size = GetTextureSize(_iconTexture);
-                    if (handle != IntPtr.Zero && size.X > 0 && size.Y > 0)
-                    {
-                    float maxSide = 128f;
-                    float scale = Math.Min(Math.Min(maxSide / size.X, maxSide / size.Y), 1f);
-                    var displaySize = new System.Numerics.Vector2(size.X * scale, size.Y * scale);
-                    ImGui.Image(new ImTextureID(handle), displaySize);
-                        ImGui.Spacing();
-                    }
-                }
-                catch { /* ignore */ }
-            }
 
             ImGui.Text("Saddlebag Exchange");
             ImGui.Separator();
@@ -52,16 +30,16 @@ namespace SaddlebagExchange.UI
             ImGui.Spacing();
 
             if (ImGui.Button("Guides"))
-                OpenUrl(GuidesUrl);
+                Util.OpenLink(GuidesUrl);
             ImGui.SameLine();
             if (ImGui.Button("Patreon"))
-                OpenUrl(PatreonUrl);
+                Util.OpenLink(PatreonUrl);
             ImGui.SameLine();
             if (ImGui.Button("Discord"))
-                OpenUrl(DiscordUrl);
+                Util.OpenLink(DiscordUrl);
             ImGui.SameLine();
             if (ImGui.Button("Website"))
-                OpenUrl(WebsiteUrl);
+                Util.OpenLink(WebsiteUrl);
 
             ImGui.Spacing();
             ImGui.Separator();
@@ -90,46 +68,56 @@ namespace SaddlebagExchange.UI
             ImGui.Spacing();
 
             float avail = ImGui.GetContentRegionAvail().X;
-            const float cardMaxWidth = 300f;
+            float cardMaxWidth = 300f * ImGuiHelpers.GlobalScale;
             float cardWidth = Math.Min(avail, cardMaxWidth);
-            const float cardHeight = 88f;
+            float cardHeight = 88f * ImGuiHelpers.GlobalScale;
             float wrapX = cardWidth - ImGui.GetStyle().WindowPadding.X * 2f;
 
             // Reselling Trade Searches
-            ImGui.BeginChild("##tool_reselling", new System.Numerics.Vector2(cardWidth, cardHeight), true, ImGuiWindowFlags.None);
-            var resellingMin = ImGui.GetCursorScreenPos();
-            if (ImGui.InvisibleButton("##btn_reselling", new System.Numerics.Vector2(cardWidth, cardHeight)))
-                onSelectTool(1);
-            if (ImGui.IsItemHovered())
-                ImGui.SetTooltip("Click to open Reselling Search");
-            ImGui.SetCursorScreenPos(new System.Numerics.Vector2(resellingMin.X + ImGui.GetStyle().WindowPadding.X, resellingMin.Y + ImGui.GetStyle().WindowPadding.Y));
-            ImGui.PushStyleColor(ImGuiCol.Text, new System.Numerics.Vector4(0.45f, 0.28f, 0.65f, 1f));
-            ImGui.Text("Reselling Trade Searches");
-            ImGui.PopStyleColor();
-            ImGui.SetCursorPosX(ImGui.GetStyle().WindowPadding.X);
-            ImGui.PushTextWrapPos(ImGui.GetCursorPos().X + wrapX);
-            ImGui.TextWrapped("Find items you can buy on other servers and resell on your own for a profit!");
-            ImGui.PopTextWrapPos();
-            ImGui.EndChild();
+            using (var child = ImRaii.Child("##tool_reselling", new System.Numerics.Vector2(cardWidth, cardHeight), true, ImGuiWindowFlags.None))
+            {
+                if (child.Success)
+                {
+                    var resellingMin = ImGui.GetCursorScreenPos();
+                    var resellingHitSize = ImGui.GetContentRegionAvail();
+                    if (ImGui.InvisibleButton("##btn_reselling", resellingHitSize))
+                        onSelectTool(1);
+                    if (ImGui.IsItemHovered())
+                        ImGui.SetTooltip("Click to open Reselling Search");
+                    ImGui.SetCursorScreenPos(resellingMin);
+                    ImGui.PushStyleColor(ImGuiCol.Text, new System.Numerics.Vector4(0.45f, 0.28f, 0.65f, 1f));
+                    ImGui.Text("Reselling Trade Searches");
+                    ImGui.PopStyleColor();
+                    ImGui.SetCursorPosX(ImGui.GetStyle().WindowPadding.X);
+                    ImGui.PushTextWrapPos(ImGui.GetCursorPos().X + wrapX);
+                    ImGui.TextWrapped("Find items you can buy on other servers and resell on your own for a profit!");
+                    ImGui.PopTextWrapPos();
+                }
+            }
 
             ImGui.Spacing();
 
             // Marketshare Overview
-            ImGui.BeginChild("##tool_marketshare", new System.Numerics.Vector2(cardWidth, cardHeight), true, ImGuiWindowFlags.None);
-            var msMin = ImGui.GetCursorScreenPos();
-            if (ImGui.InvisibleButton("##btn_marketshare", new System.Numerics.Vector2(cardWidth, cardHeight)))
-                onSelectTool(2);
-            if (ImGui.IsItemHovered())
-                ImGui.SetTooltip("Click to open Market Overview");
-            ImGui.SetCursorScreenPos(new System.Numerics.Vector2(msMin.X + ImGui.GetStyle().WindowPadding.X, msMin.Y + ImGui.GetStyle().WindowPadding.Y));
-            ImGui.PushStyleColor(ImGuiCol.Text, new System.Numerics.Vector4(0.45f, 0.28f, 0.65f, 1f));
-            ImGui.Text("Marketshare Overview");
-            ImGui.PopStyleColor();
-            ImGui.SetCursorPosX(ImGui.GetStyle().WindowPadding.X);
-            ImGui.PushTextWrapPos(ImGui.GetCursorPos().X + wrapX);
-            ImGui.TextWrapped("Finds the best items to sell! Shows the top 200 best selling items on your home server.");
-            ImGui.PopTextWrapPos();
-            ImGui.EndChild();
+            using (var child = ImRaii.Child("##tool_marketshare", new System.Numerics.Vector2(cardWidth, cardHeight), true, ImGuiWindowFlags.None))
+            {
+                if (child.Success)
+                {
+                    var msMin = ImGui.GetCursorScreenPos();
+                    var msHitSize = ImGui.GetContentRegionAvail();
+                    if (ImGui.InvisibleButton("##btn_marketshare", msHitSize))
+                        onSelectTool(2);
+                    if (ImGui.IsItemHovered())
+                        ImGui.SetTooltip("Click to open Market Overview");
+                    ImGui.SetCursorScreenPos(msMin);
+                    ImGui.PushStyleColor(ImGuiCol.Text, new System.Numerics.Vector4(0.45f, 0.28f, 0.65f, 1f));
+                    ImGui.Text("Marketshare Overview");
+                    ImGui.PopStyleColor();
+                    ImGui.SetCursorPosX(ImGui.GetStyle().WindowPadding.X);
+                    ImGui.PushTextWrapPos(ImGui.GetCursorPos().X + wrapX);
+                    ImGui.TextWrapped("Finds the best items to sell! Shows the top 200 best selling items on your home server.");
+                    ImGui.PopTextWrapPos();
+                }
+            }
         }
 
         private void DrawDefaultHomeServerSection(Func<string> getDefaultHomeServer, Action<string> setDefaultHomeServer)
@@ -150,7 +138,7 @@ namespace SaddlebagExchange.UI
             }
 
             string dcPreview = string.IsNullOrEmpty(_defaultDc) ? "Select data center..." : _defaultDc;
-            ImGui.SetNextItemWidth(ServerComboWidth);
+            ImGui.SetNextItemWidth(ServerComboWidth * ImGuiHelpers.GlobalScale);
             if (ImGui.BeginCombo("Data Center", dcPreview))
             {
                 foreach (string dc in WorldList.GetDataCenters())
@@ -173,7 +161,7 @@ namespace SaddlebagExchange.UI
 
             string[] worlds = string.IsNullOrEmpty(_defaultDc) ? Array.Empty<string>() : WorldList.GetWorlds(_defaultDc);
             string worldPreview = string.IsNullOrEmpty(currentWorld) ? "Select world..." : currentWorld;
-            ImGui.SetNextItemWidth(ServerComboWidth);
+            ImGui.SetNextItemWidth(ServerComboWidth * ImGuiHelpers.GlobalScale);
             if (ImGui.BeginCombo("World", worldPreview))
             {
                 foreach (string world in worlds)
@@ -185,63 +173,6 @@ namespace SaddlebagExchange.UI
                         ImGui.SetItemDefaultFocus();
                 }
                 ImGui.EndCombo();
-            }
-        }
-
-        private void TryLoadIcon(IDalamudPluginInterface? pluginInterface)
-        {
-            if (_iconLoadAttempted || pluginInterface == null) return;
-            _iconLoadAttempted = true;
-            try
-            {
-                var dir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-                var path = Path.Combine(dir ?? ".", "icon.png");
-                if (!File.Exists(path)) return;
-                var textureProvider = pluginInterface.GetService(typeof(Dalamud.Plugin.Services.ITextureProvider));
-                if (textureProvider == null) return;
-                var loadMethod = textureProvider.GetType().GetMethod("GetFromFileAsync", new[] { typeof(string) });
-                if (loadMethod == null) return;
-                var taskObj = loadMethod.Invoke(textureProvider, new object[] { path });
-                if (taskObj is not Task task) return;
-                task.ContinueWith(t =>
-                {
-                    if (!t.IsFaulted && t.IsCompletedSuccessfully)
-                    {
-                        var resultProp = t.GetType().GetProperty("Result");
-                        if (resultProp != null)
-                            _iconTexture = resultProp.GetValue(t);
-                    }
-                }, TaskScheduler.Default);
-            }
-            catch { /* ignore */ }
-        }
-
-        private static IntPtr GetTextureHandle(object wrap)
-        {
-            var prop = wrap.GetType().GetProperty("ImGuiHandle");
-            if (prop == null) prop = wrap.GetType().GetProperty("Handle");
-            return prop?.GetValue(wrap) is IntPtr p ? p : IntPtr.Zero;
-        }
-
-        private static System.Numerics.Vector2 GetTextureSize(object wrap)
-        {
-            var w = wrap.GetType().GetProperty("Width")?.GetValue(wrap) is int wv ? wv : 0;
-            var h = wrap.GetType().GetProperty("Height")?.GetValue(wrap) is int hv ? hv : 0;
-            return new System.Numerics.Vector2(w, h);
-        }
-
-        private static void OpenUrl(string url)
-        {
-            if (string.IsNullOrEmpty(url)) return;
-            if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || !uri.IsAbsoluteUri)
-                return;
-            try
-            {
-                using var _ = Process.Start(new ProcessStartInfo { FileName = uri.ToString(), UseShellExecute = true });
-            }
-            catch
-            {
-                /* ignore */
             }
         }
     }
