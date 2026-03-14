@@ -89,13 +89,14 @@ namespace SaddlebagExchange.UI
             ImGui.Spacing();
 
             float avail = ImGui.GetContentRegionAvail().X;
-            float cardWidth = (avail - ImGui.GetStyle().ItemSpacing.X) * 0.5f;
-            float cardHeight = 72f;
+            const float cardMaxWidth = 300f;
+            float cardWidth = Math.Min(avail, cardMaxWidth);
+            const float cardHeight = 88f;
+            float wrapX = cardWidth - ImGui.GetStyle().WindowPadding.X * 2f;
 
             // Reselling Trade Searches
             ImGui.BeginChild("##tool_reselling", new System.Numerics.Vector2(cardWidth, cardHeight), true, ImGuiWindowFlags.None);
             var resellingMin = ImGui.GetCursorScreenPos();
-            var resellingMax = new System.Numerics.Vector2(resellingMin.X + cardWidth, resellingMin.Y + cardHeight);
             if (ImGui.InvisibleButton("##btn_reselling", new System.Numerics.Vector2(cardWidth, cardHeight)))
                 onSelectTool(1);
             if (ImGui.IsItemHovered())
@@ -105,12 +106,12 @@ namespace SaddlebagExchange.UI
             ImGui.Text("Reselling Trade Searches");
             ImGui.PopStyleColor();
             ImGui.SetCursorPosX(ImGui.GetStyle().WindowPadding.X);
-            ImGui.PushTextWrapPos(resellingMin.X + cardWidth - ImGui.GetStyle().WindowPadding.X);
+            ImGui.PushTextWrapPos(ImGui.GetCursorPos().X + wrapX);
             ImGui.TextWrapped("Find items you can buy on other servers and resell on your own for a profit!");
             ImGui.PopTextWrapPos();
             ImGui.EndChild();
 
-            ImGui.SameLine();
+            ImGui.Spacing();
 
             // Marketshare Overview
             ImGui.BeginChild("##tool_marketshare", new System.Numerics.Vector2(cardWidth, cardHeight), true, ImGuiWindowFlags.None);
@@ -124,7 +125,7 @@ namespace SaddlebagExchange.UI
             ImGui.Text("Marketshare Overview");
             ImGui.PopStyleColor();
             ImGui.SetCursorPosX(ImGui.GetStyle().WindowPadding.X);
-            ImGui.PushTextWrapPos(msMin.X + cardWidth - ImGui.GetStyle().WindowPadding.X);
+            ImGui.PushTextWrapPos(ImGui.GetCursorPos().X + wrapX);
             ImGui.TextWrapped("Finds the best items to sell! Shows the top 200 best selling items on your home server.");
             ImGui.PopTextWrapPos();
             ImGui.EndChild();
