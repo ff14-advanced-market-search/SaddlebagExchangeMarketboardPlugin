@@ -12,7 +12,7 @@ namespace SaddlebagExchange
         public string Name => "Saddlebag Exchange";
 
         private bool _windowOpen;
-        private readonly MainWindow _mainWindow = new();
+        private readonly MainWindow _mainWindow;
         private IDalamudPluginInterface? _pi;
         private ICommandManager? _cmd;
         private bool _commandsRegistered;
@@ -22,6 +22,7 @@ namespace SaddlebagExchange
         public Plugin(IDalamudPluginInterface pluginInterface)
         {
             _pi = pluginInterface;
+            _mainWindow = new MainWindow(pluginInterface);
             // Only Settings button opens the UI; Open button in /xlplugins intentionally does nothing.
             _onOpenMainUi = () => { };
             _onOpenConfigUi = () => _windowOpen = true;
