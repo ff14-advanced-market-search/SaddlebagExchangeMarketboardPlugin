@@ -1,6 +1,8 @@
 # Saddlebag Exchange
 
-FFXIV Dalamud plugin for marketboard analytics and cross-world arbitrage (TSM-style for FFXIV).
+FFXIV Dalamud plugin for marketboard trading and gil making!
+
+The [Saddlebag Exchange](https://saddlebagexchange.com/ffxiv) website but now in a plugin!
 
 ## Install (for players)
 
