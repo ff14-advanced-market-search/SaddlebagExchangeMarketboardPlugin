@@ -14,6 +14,9 @@
     <!-- API level from SDK/packager version (e.g. 14.0.2 -> 14). Do not hardcode. -->
     <DalamudApiLevel Condition="'$(DalamudApiLevel)' == ''">$([System.Version]::Parse('$(PackageVersion_DalamudPackager)').Major)</DalamudApiLevel>
     <LoadRequiredState>0</LoadRequiredState>
+    <RepoUrl>https://github.com/ff14-advanced-market-search/SaddlebagExchangeMarketboardPlugin</RepoUrl>
+    <Changelog>Initial release.</Changelog>
+    <Tags>marketboard;arbitrage;economy;gil;crafting;money;trading;flipping;materia</Tags>
   </PropertyGroup>
 
   <!-- Icon shown in /xlplugins for dev plugins (icon.png next to DLL) -->
@@ -21,11 +24,27 @@
     <Content Include="Assets\icon.png" CopyToOutputDirectory="PreserveNewest" Link="icon.png" />
   </ItemGroup>
 
-  <!-- Emit manifest.json to output with API level from SDK (no hardcoding). -->
-  <Target Name="EmitManifestWithApiLevel" AfterTargets="Build">
-    <Copy SourceFiles="$(MSBuildProjectDirectory)\manifest.json" DestinationFiles="$(OutputPath)manifest.json" />
-    <Exec Command="sed -i 's/__DALAMUD_API_LEVEL__/$(DalamudApiLevel)/g' '$(OutputPath)manifest.json'" Condition="'$(OS)' != 'Windows_NT'" />
-    <Exec Command="powershell -NoProfile -Command &quot;(Get-Content -Path '$(OutputPath)manifest.json' -Raw) -replace '__DALAMUD_API_LEVEL__', '$(DalamudApiLevel)' | Set-Content -Path '$(OutputPath)manifest.json' -NoNewline&quot;" Condition="'$(OS)' == 'Windows_NT'" />
+  <!-- Generate manifest.json from project (single source of truth). -->
+  <Target Name="GenerateManifest" AfterTargets="Build">
+    <PropertyGroup>
+      <_TagsJson>"marketboard", "arbitrage", "economy", "gil", "crafting", "money", "trading", "flipping", "materia"</_TagsJson>
+    </PropertyGroup>
+    <ItemGroup>
+      <_ManifestLine Include="{"/>
+      <_ManifestLine Include="  &quot;Author&quot;: &quot;$(Author)&quot;,"/>
+      <_ManifestLine Include="  &quot;Name&quot;: &quot;$(Name)&quot;,"/>
+      <_ManifestLine Include="  &quot;Punchline&quot;: &quot;$(Punchline)&quot;,"/>
+      <_ManifestLine Include="  &quot;Description&quot;: &quot;$(Description)&quot;,"/>
+      <_ManifestLine Include="  &quot;InternalName&quot;: &quot;$(InternalName)&quot;,"/>
+      <_ManifestLine Include="  &quot;AssemblyVersion&quot;: &quot;$(AssemblyVersion)&quot;,"/>
+      <_ManifestLine Include="  &quot;DalamudApiLevel&quot;: $(DalamudApiLevel),"/>
+      <_ManifestLine Include="  &quot;LoadRequiredState&quot;: $(LoadRequiredState),"/>
+      <_ManifestLine Include="  &quot;RepoUrl&quot;: &quot;$(RepoUrl)&quot;,"/>
+      <_ManifestLine Include="  &quot;Tags&quot;: [$(_TagsJson)],"/>
+      <_ManifestLine Include="  &quot;Changelog&quot;: &quot;$(Changelog)&quot;"/>
+      <_ManifestLine Include="}"/>
+    </ItemGroup>
+    <WriteLinesToFile File="$(OutputPath)manifest.json" Lines="@(_ManifestLine)" Overwrite="true" WriteOnlyWhenDifferent="true" />
   </Target>
 
   <!-- After build: (1) copy to bin\Debug so "other path" works, (2) copy to XIVLauncher devPlugins -->

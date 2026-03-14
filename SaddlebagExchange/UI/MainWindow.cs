@@ -3,6 +3,8 @@ using System.IO;
 using System.Reflection;
 using System.Numerics;
 using Dalamud.Bindings.ImGui;
+using Dalamud.Interface.Utility;
+using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
 
@@ -104,35 +106,42 @@ namespace SaddlebagExchange.UI
 
         public override void Draw()
         {
-            ImGui.BeginChild("##tools_list", new Vector2(180, -1), true);
-            if (ImGui.Selectable("Home", _selectedToolIndex == 0))
-                _selectedToolIndex = 0;
-            if (ImGui.Selectable("Reselling Search", _selectedToolIndex == 1))
-                _selectedToolIndex = 1;
-            if (ImGui.Selectable("Market Overview", _selectedToolIndex == 2))
-                _selectedToolIndex = 2;
-            ImGui.EndChild();
-
-            ImGui.SameLine();
-            ImGui.BeginChild("##tool_content", new Vector2(-1, -1), true);
-
-            switch (_selectedToolIndex)
+            float toolsListWidth = 180f * ImGuiHelpers.GlobalScale;
+            using (var child = ImRaii.Child("##tools_list", new Vector2(toolsListWidth, -1), true))
             {
-                case 0:
-                    _homeTab.Draw(_pluginInterface, GetDefaultHomeServer, SetDefaultHomeServer, (tabIndex) => _selectedToolIndex = tabIndex);
-                    break;
-                case 1:
-                    _resellingSearch.Draw();
-                    break;
-                case 2:
-                    _marketshareTab.Draw();
-                    break;
-                default:
-                    ImGui.Text("Select a tool from the list.");
-                    break;
+                if (child.Success)
+                {
+                    if (ImGui.Selectable("Home", _selectedToolIndex == 0))
+                        _selectedToolIndex = 0;
+                    if (ImGui.Selectable("Reselling Search", _selectedToolIndex == 1))
+                        _selectedToolIndex = 1;
+                    if (ImGui.Selectable("Market Overview", _selectedToolIndex == 2))
+                        _selectedToolIndex = 2;
+                }
             }
 
-            ImGui.EndChild();
+            ImGui.SameLine();
+            using (var child = ImRaii.Child("##tool_content", new Vector2(-1, -1), true))
+            {
+                if (child.Success)
+                {
+                    switch (_selectedToolIndex)
+                    {
+                        case 0:
+                            _homeTab.Draw(_pluginInterface, GetDefaultHomeServer, SetDefaultHomeServer, (tabIndex) => _selectedToolIndex = tabIndex);
+                            break;
+                        case 1:
+                            _resellingSearch.Draw();
+                            break;
+                        case 2:
+                            _marketshareTab.Draw();
+                            break;
+                        default:
+                            ImGui.Text("Select a tool from the list.");
+                            break;
+                    }
+                }
+            }
         }
 
         public void Dispose()
