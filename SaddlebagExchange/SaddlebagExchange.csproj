@@ -28,12 +28,12 @@
   <Target Name="GenerateManifest" AfterTargets="Build">
     <PropertyGroup>
       <_TagsJson>&quot;$([System.String]::Copy($(Tags)).Replace(';', '&quot;, &quot;'))&quot;</_TagsJson>
-      <_AuthorEscaped>$([System.String]::Copy($(Author)).Replace('\', '\\').Replace('"', '\"'))</_AuthorEscaped>
-      <_NameEscaped>$([System.String]::Copy($(Name)).Replace('\', '\\').Replace('"', '\"'))</_NameEscaped>
-      <_PunchlineEscaped>$([System.String]::Copy($(Punchline)).Replace('\', '\\').Replace('"', '\"'))</_PunchlineEscaped>
-      <_DescriptionEscaped>$([System.String]::Copy($(Description)).Replace('\', '\\').Replace('"', '\"'))</_DescriptionEscaped>
-      <_RepoUrlEscaped>$([System.String]::Copy($(RepoUrl)).Replace('\', '\\').Replace('"', '\"'))</_RepoUrlEscaped>
-      <_ChangelogEscaped>$([System.String]::Copy($(Changelog)).Replace('\', '\\').Replace('"', '\"'))</_ChangelogEscaped>
+      <_AuthorEscaped>$([System.String]::Copy($(Author)).Replace('\', '\\').Replace('"', '\"').Replace('\r', '\\r').Replace('\n', '\\n'))</_AuthorEscaped>
+      <_NameEscaped>$([System.String]::Copy($(Name)).Replace('\', '\\').Replace('"', '\"').Replace('\r', '\\r').Replace('\n', '\\n'))</_NameEscaped>
+      <_PunchlineEscaped>$([System.String]::Copy($(Punchline)).Replace('\', '\\').Replace('"', '\"').Replace('\r', '\\r').Replace('\n', '\\n'))</_PunchlineEscaped>
+      <_DescriptionEscaped>$([System.String]::Copy($(Description)).Replace('\', '\\').Replace('"', '\"').Replace('\r', '\\r').Replace('\n', '\\n'))</_DescriptionEscaped>
+      <_RepoUrlEscaped>$([System.String]::Copy($(RepoUrl)).Replace('\', '\\').Replace('"', '\"').Replace('\r', '\\r').Replace('\n', '\\n'))</_RepoUrlEscaped>
+      <_ChangelogEscaped>$([System.String]::Copy($(Changelog)).Replace('\', '\\').Replace('"', '\"').Replace('\r', '\\r').Replace('\n', '\\n'))</_ChangelogEscaped>
     </PropertyGroup>
     <ItemGroup>
       <_ManifestLine Include="{"/>
@@ -54,8 +54,8 @@
     <WriteLinesToFile File="$(OutputPath)manifest.json" Lines="@(_ManifestLine)" Overwrite="true" WriteOnlyWhenDifferent="true" />
   </Target>
 
-  <!-- After build: (1) copy to bin\Debug so "other path" works, (2) copy to XIVLauncher devPlugins -->
-  <Target Name="CopyToDevPlugins" AfterTargets="Build" Condition=" '$(Configuration)' == 'Debug' ">
+  <!-- After build: (1) copy to bin\Debug so "other path" works, (2) copy to XIVLauncher devPlugins. Runs after GenerateManifest so manifest.json exists. -->
+  <Target Name="CopyToDevPlugins" AfterTargets="GenerateManifest" Condition=" '$(Configuration)' == 'Debug' ">
     <PropertyGroup>
       <_DevPluginsDir>$(MSBuildProjectDirectory)\..\..\SaddlebagExchange</_DevPluginsDir>
       <_BinDebugDir>$(MSBuildProjectDirectory)\bin\$(Configuration)</_BinDebugDir>

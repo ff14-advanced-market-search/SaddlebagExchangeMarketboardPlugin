@@ -692,6 +692,7 @@ namespace SaddlebagExchange.UI
                 const int cols = 8;
                 var items = results
                     .Select(r => (r, v: Math.Max(0, GetTreemapMetricValue(r, _treemapMetricIndex))))
+                    .Where(t => t.v > 0)
                     .OrderByDescending(t => t.v)
                     .Take(maxItems)
                     .ToList();

@@ -29,7 +29,7 @@ Slash command to open window:
 
 Updates are delivered through the same repo; the installer will use the latest release from the [releases page](https://github.com/ff14-advanced-market-search/SaddlebagExchangeMarketboardPlugin/releases).
 
-**If install fails:** Restart the game and try again. If it still fails, check the Dalamud log (XIVLauncher → Settings → open the log/data folder, or `%AppData%\XIVLauncher\log`) for the exact error (e.g. download failure, invalid zip, or missing manifest). The release zip should contain a single folder `SaddlebagExchange` with `SaddlebagExchange.dll`, `manifest.json`, and `icon.png` inside it.
+**If install fails:** Restart the game and try again. If it still fails, check the Dalamud log (XIVLauncher → Settings → open the log/data folder, or `%AppData%\XIVLauncher\log`) for the exact error (e.g. download failure, invalid zip, or missing manifest). The release zip has **SaddlebagExchange.dll**, **manifest.json**, and **icon.png** at the archive root (no nested folder).
 
 ## Creating a release
 
@@ -78,7 +78,7 @@ ffxiv-plugin/
 ├── SaddlebagExchange/
 │   ├── SaddlebagExchange.csproj
 │   ├── Plugin.cs
-│   └── manifest.json
+│   └── ... (manifest.json is generated to bin/<Configuration>/net10.0/)
 └── README.md
 ```
 
@@ -133,10 +133,10 @@ No need to copy the DLL by hand; the post-build copy handles it.
    ```
    Example: `C:\Users\<You>\AppData\Roaming\XIVLauncher\devPlugins\SaddlebagExchange`
 
-2. Either build once (post-build will copy files) or copy manually:
-   - `SaddlebagExchange/bin/Debug/net10.0/SaddlebagExchange.dll`
-   - `SaddlebagExchange/manifest.json`
-   - `SaddlebagExchange/Assets/icon.png` (optional)
+2. Either build once (post-build will copy files) or copy manually from `SaddlebagExchange/bin/Debug/net10.0/`:
+   - `SaddlebagExchange.dll`
+   - `manifest.json`
+   - `icon.png` (optional)
 
 ## Load in game
 

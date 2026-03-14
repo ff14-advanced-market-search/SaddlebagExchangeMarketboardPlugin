@@ -42,9 +42,20 @@ namespace SaddlebagExchange.UI
                         {
                             var list = new System.Collections.Generic.List<int>(filters);
                             if (isChecked)
-                                list.Add(id);
+                            {
+                                if (id == 0)
+                                {
+                                    setFilters(new[] { 0 });
+                                    continue;
+                                }
+                                list.Remove(0);
+                                if (!list.Contains(id))
+                                    list.Add(id);
+                            }
                             else
+                            {
                                 list.Remove(id);
+                            }
                             setFilters(list.ToArray());
                         }
                     }
