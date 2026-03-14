@@ -32,6 +32,18 @@ namespace SaddlebagExchange.Models
         [JsonPropertyName("percentChange")]
         public double PercentChange { get; set; }
 
+        [JsonPropertyName("minPrice")]
+        public long MinPrice { get; set; }
+
+        [JsonPropertyName("npc_vendor_info")]
+        public string? NpcVendorInfo { get; set; }
+
+        [JsonPropertyName("url")]
+        public string? UniversalisUrl { get; set; }
+
+        [JsonPropertyName("state")]
+        public string? State { get; set; }
+
         public const string SaddlebagBaseUrl = "https://saddlebagexchange.com/queries/item-data/";
         public string SaddlebagUrl => SaddlebagBaseUrl + ItemId;
     }

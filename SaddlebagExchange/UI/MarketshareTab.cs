@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Dalamud.Bindings.ImGui;
@@ -13,6 +14,7 @@ namespace SaddlebagExchange.UI
     public sealed class MarketshareTab
     {
         private const float InputWidth = 200f;
+        private const int SearchBufferSize = 128;
 
         private readonly SaddlebagApiService _api = new();
         private readonly object _scanLock = new();
@@ -23,6 +25,64 @@ namespace SaddlebagExchange.UI
         private string _errorMessage = string.Empty;
         private bool _showFiltersPopup;
         private bool _resultsWindowOpen;
+        private bool _showColumnsPopup;
+        private readonly byte[] _searchBuffer = new byte[SearchBufferSize];
+        private int _sortColumnIndex = 0;
+        private bool _sortAscending = false;
+        private int _tableIdCounter;
+        private string? _copyNotificationText;
+        private DateTime _copyNotificationUntil;
+        private readonly List<int> _columnOrder = new();
+        private readonly bool[] _columnVisible = new bool[(int)MsResultColumn._Count];
+
+        private enum MsResultColumn
+        {
+            ItemName = 0,
+            ItemId,
+            MarketValue,
+            Avg,
+            Median,
+            MinPrice,
+            PurchaseAmount,
+            QuantitySold,
+            PercentChange,
+            State,
+            Universalis,
+            Vendor,
+            Saddlebag,
+            _Count
+        }
+
+        private static int[] GetDefaultColumnOrder() => new[]
+        {
+            (int)MsResultColumn.ItemName,
+            (int)MsResultColumn.MarketValue,
+            (int)MsResultColumn.Avg,
+            (int)MsResultColumn.Median,
+            (int)MsResultColumn.MinPrice,
+            (int)MsResultColumn.PurchaseAmount,
+            (int)MsResultColumn.QuantitySold,
+            (int)MsResultColumn.PercentChange,
+            (int)MsResultColumn.State,
+            (int)MsResultColumn.Saddlebag,
+            (int)MsResultColumn.Universalis,
+            (int)MsResultColumn.Vendor,
+            (int)MsResultColumn.ItemId
+        };
+
+        private void EnsureColumnState()
+        {
+            const int n = (int)MsResultColumn._Count;
+            if (_columnOrder.Count != n)
+            {
+                _columnOrder.Clear();
+                foreach (int i in GetDefaultColumnOrder())
+                {
+                    _columnOrder.Add(i);
+                    _columnVisible[i] = true;
+                }
+            }
+        }
 
         private static MarketshareParams P(int timePeriod, int salesAmount, int averagePrice, int[] filters, string sortBy) => new()
         {
@@ -178,43 +238,298 @@ namespace SaddlebagExchange.UI
 
         private void DrawResultsTable(List<MarketshareResultItem> results)
         {
-            if (results == null || results.Count == 0) return;
-            if (ImGui.BeginTable("##marketshare_results", 6, ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg | ImGuiTableFlags.ScrollY, new System.Numerics.Vector2(-1, -1)))
+            EnsureColumnState();
+            var visibleCols = _columnOrder.Where(i => _columnVisible[i]).ToList();
+            if (visibleCols.Count == 0)
             {
-                ImGui.TableSetupColumn("Item", ImGuiTableColumnFlags.WidthStretch);
-                ImGui.TableSetupColumn("Market Value", ImGuiTableColumnFlags.WidthFixed, 100f);
-                ImGui.TableSetupColumn("Avg", ImGuiTableColumnFlags.WidthFixed, 80f);
-                ImGui.TableSetupColumn("Median", ImGuiTableColumnFlags.WidthFixed, 80f);
-                ImGui.TableSetupColumn("Qty Sold", ImGuiTableColumnFlags.WidthFixed, 70f);
-                ImGui.TableSetupColumn("", ImGuiTableColumnFlags.WidthFixed, 60f);
-                ImGui.TableHeadersRow();
+                ImGui.Text("No columns visible. Use Columns to show some.");
+                return;
+            }
 
-                foreach (var row in results)
+            string searchFilter = Encoding.UTF8.GetString(_searchBuffer).TrimEnd('\0');
+            var sorted = SortResults(results);
+            var filtered = string.IsNullOrWhiteSpace(searchFilter)
+                ? sorted
+                : sorted.Where(r => MatchesSearch(r, searchFilter)).ToList();
+            ImGui.InputText("Search", _searchBuffer, ImGuiInputTextFlags.None);
+            string countText = string.IsNullOrWhiteSpace(searchFilter)
+                ? $"Results: {results.Count} items (click header to sort, scroll horizontally for more columns)"
+                : $"Results: {results.Count} items ({filtered.Count} matching)";
+            ImGui.Text(countText);
+            ImGui.Text("Click an item name to copy it to the clipboard.");
+            if (_copyNotificationText != null && DateTime.UtcNow < _copyNotificationUntil)
+            {
+                ImGui.PushStyleColor(ImGuiCol.Text, new System.Numerics.Vector4(0.4f, 1f, 0.4f, 1f));
+                ImGui.Text(_copyNotificationText);
+                ImGui.PopStyleColor();
+            }
+            if (ImGui.Button("Columns"))
+                _showColumnsPopup = true;
+            ImGui.SameLine();
+            if (ImGui.Button("Reset columns"))
+            {
+                _columnOrder.Clear();
+                foreach (int i in GetDefaultColumnOrder())
                 {
-                    ImGui.TableNextRow();
-                    ImGui.TableNextColumn();
-                    ImGui.TextUnformatted(!string.IsNullOrEmpty(row.ItemName) ? row.ItemName : row.ItemId.ToString());
-                    ImGui.TableNextColumn();
-                    ImGui.TextUnformatted(row.MarketValue.ToString("N0"));
-                    ImGui.TableNextColumn();
-                    ImGui.TextUnformatted(row.Avg.ToString("N0"));
-                    ImGui.TableNextColumn();
-                    ImGui.TextUnformatted(row.Median.ToString("N0"));
-                    ImGui.TableNextColumn();
-                    ImGui.TextUnformatted(row.QuantitySold.ToString());
-                    ImGui.TableNextColumn();
-                    if (ImGui.SmallButton("Link"))
+                    _columnOrder.Add(i);
+                    _columnVisible[i] = true;
+                }
+            }
+            ImGui.SameLine();
+            if (ImGui.Button("Reset column widths"))
+                _tableIdCounter++;
+            ImGui.Spacing();
+
+            var avail = ImGui.GetContentRegionAvail();
+            var tableSize = new System.Numerics.Vector2(avail.X, Math.Max(200, avail.Y));
+            string tableId = "MarketshareResults##" + _tableIdCounter;
+            if (!ImGui.BeginTable(tableId, visibleCols.Count, ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg | ImGuiTableFlags.Resizable | ImGuiTableFlags.ScrollY | ImGuiTableFlags.ScrollX, tableSize))
+                return;
+
+            for (int i = 0; i < visibleCols.Count; i++)
+            {
+                int colId = visibleCols[i];
+                float defaultW = GetDefaultColumnWidth(colId);
+                ImGui.TableSetupColumn(GetColumnHeader(colId), ImGuiTableColumnFlags.WidthFixed, defaultW, (uint)colId);
+            }
+            ImGui.TableSetupScrollFreeze(0, 1);
+
+            ImGui.TableNextRow(ImGuiTableRowFlags.Headers);
+            foreach (int colId in visibleCols)
+            {
+                ImGui.TableNextColumn();
+                ImGui.PushID(colId);
+                bool active = _sortColumnIndex == colId;
+                string headerText = GetColumnHeader(colId) + (active ? (_sortAscending ? " ▲" : " ▼") : "");
+                var cellAvail = ImGui.GetContentRegionAvail();
+                var p0 = ImGui.GetCursorPos();
+                float buttonH = Math.Min(cellAvail.Y, ImGui.GetTextLineHeightWithSpacing() * 4f);
+                if (ImGui.InvisibleButton("sort", new System.Numerics.Vector2(cellAvail.X, buttonH)))
+                {
+                    if (_sortColumnIndex == colId)
+                        _sortAscending = !_sortAscending;
+                    else
                     {
-                        try
-                        {
-                            if (OperatingSystem.IsWindows())
-                                Process.Start(new ProcessStartInfo(row.SaddlebagUrl) { UseShellExecute = true });
-                        }
-                        catch { /* ignore */ }
+                        _sortColumnIndex = colId;
+                        _sortAscending = true;
                     }
                 }
-                ImGui.EndTable();
+                ImGui.SetCursorPos(p0);
+                ImGui.PushTextWrapPos(p0.X + cellAvail.X);
+                ImGui.TextWrapped(headerText);
+                ImGui.PopTextWrapPos();
+                ImGui.PopID();
             }
+
+            int rowIndex = 0;
+            foreach (var row in filtered)
+            {
+                ImGui.PushID(rowIndex);
+                ImGui.TableNextRow();
+                foreach (int colId in visibleCols)
+                {
+                    ImGui.TableNextColumn();
+                    DrawCell(row, colId);
+                }
+                ImGui.PopID();
+                rowIndex++;
+            }
+
+            ImGui.EndTable();
+
+            if (_showColumnsPopup)
+            {
+                ImGui.OpenPopup("Marketshare column options");
+                _showColumnsPopup = false;
+            }
+            if (ImGui.BeginPopup("Marketshare column options"))
+            {
+                ImGui.Text("Show / hide and reorder columns");
+                ImGui.Separator();
+                for (int i = 0; i < _columnOrder.Count; i++)
+                {
+                    int colId = _columnOrder[i];
+                    ImGui.PushID(colId);
+                    bool vis = _columnVisible[colId];
+                    if (ImGui.Checkbox("##vis", ref vis))
+                        _columnVisible[colId] = vis;
+                    ImGui.SameLine();
+                    ImGui.Text(GetColumnHeader(colId));
+                    ImGui.SameLine();
+                    if (ImGui.SmallButton("Up") && i > 0)
+                    {
+                        (_columnOrder[i], _columnOrder[i - 1]) = (_columnOrder[i - 1], _columnOrder[i]);
+                    }
+                    ImGui.SameLine();
+                    if (ImGui.SmallButton("Down") && i < _columnOrder.Count - 1)
+                    {
+                        (_columnOrder[i], _columnOrder[i + 1]) = (_columnOrder[i + 1], _columnOrder[i]);
+                    }
+                    ImGui.PopID();
+                }
+                if (ImGui.Button("Close"))
+                    ImGui.CloseCurrentPopup();
+                ImGui.EndPopup();
+            }
+        }
+
+        private static bool MatchesSearch(MarketshareResultItem row, string search)
+        {
+            if (string.IsNullOrWhiteSpace(search)) return true;
+            var term = search.Trim();
+            var comparison = StringComparison.OrdinalIgnoreCase;
+            return (row.ItemName != null && row.ItemName.Contains(term, comparison))
+                   || (row.State != null && row.State.Contains(term, comparison))
+                   || row.ItemId.ToString().Contains(term, comparison);
+        }
+
+        private void SetClipboardTextAndNotify(string? text, string? notificationMessage = null)
+        {
+            if (string.IsNullOrEmpty(text)) return;
+            try
+            {
+                if (OperatingSystem.IsWindows())
+                    ClipboardHelper.SetText(text);
+                if (!string.IsNullOrEmpty(notificationMessage))
+                {
+                    _copyNotificationText = notificationMessage;
+                    _copyNotificationUntil = DateTime.UtcNow + TimeSpan.FromSeconds(2);
+                }
+            }
+            catch { /* ignore */ }
+        }
+
+        private static void OpenUrl(string? url)
+        {
+            if (string.IsNullOrEmpty(url)) return;
+            if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || !uri.IsAbsoluteUri)
+                return;
+            try
+            {
+                using var _ = Process.Start(new ProcessStartInfo { FileName = uri.ToString(), UseShellExecute = true });
+            }
+            catch { /* ignore */ }
+        }
+
+        private void DrawCell(MarketshareResultItem row, int colId)
+        {
+            switch ((MsResultColumn)colId)
+            {
+                case MsResultColumn.ItemName:
+                    string name = !string.IsNullOrEmpty(row.ItemName) ? row.ItemName : row.ItemId.ToString();
+                    if (ImGui.Selectable(name, false, ImGuiSelectableFlags.None, System.Numerics.Vector2.Zero))
+                        SetClipboardTextAndNotify(name, "Item name copied to clipboard");
+                    break;
+                case MsResultColumn.ItemId:
+                    ImGui.Text(row.ItemId.ToString());
+                    break;
+                case MsResultColumn.MarketValue:
+                    ImGui.Text(row.MarketValue.ToString("N0"));
+                    break;
+                case MsResultColumn.Avg:
+                    ImGui.Text(row.Avg.ToString("N0"));
+                    break;
+                case MsResultColumn.Median:
+                    ImGui.Text(row.Median.ToString("N0"));
+                    break;
+                case MsResultColumn.MinPrice:
+                    ImGui.Text(row.MinPrice.ToString("N0"));
+                    break;
+                case MsResultColumn.PurchaseAmount:
+                    ImGui.Text(row.PurchaseAmount.ToString());
+                    break;
+                case MsResultColumn.QuantitySold:
+                    ImGui.Text(row.QuantitySold.ToString());
+                    break;
+                case MsResultColumn.PercentChange:
+                    ImGui.Text(row.PercentChange.ToString("F2"));
+                    break;
+                case MsResultColumn.State:
+                    ImGui.Text(row.State ?? "-");
+                    break;
+                case MsResultColumn.Universalis:
+                    if (ImGui.SmallButton("U")) OpenUrl(row.UniversalisUrl);
+                    break;
+                case MsResultColumn.Vendor:
+                    if (!string.IsNullOrEmpty(row.NpcVendorInfo))
+                    { if (ImGui.SmallButton("V")) OpenUrl(row.NpcVendorInfo); }
+                    else ImGui.Text("-");
+                    break;
+                case MsResultColumn.Saddlebag:
+                    if (ImGui.SmallButton("S")) OpenUrl(row.SaddlebagUrl);
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        private static string GetColumnHeader(int column)
+        {
+            return column switch
+            {
+                (int)MsResultColumn.ItemName => "Item Name",
+                (int)MsResultColumn.ItemId => "Item ID",
+                (int)MsResultColumn.MarketValue => "Market Value",
+                (int)MsResultColumn.Avg => "Average",
+                (int)MsResultColumn.Median => "Median",
+                (int)MsResultColumn.MinPrice => "Min Price",
+                (int)MsResultColumn.PurchaseAmount => "Purchase Amount",
+                (int)MsResultColumn.QuantitySold => "Quantity Sold",
+                (int)MsResultColumn.PercentChange => "Percent Change",
+                (int)MsResultColumn.State => "State",
+                (int)MsResultColumn.Universalis => "Universalis",
+                (int)MsResultColumn.Vendor => "Vendor",
+                (int)MsResultColumn.Saddlebag => "Item Data",
+                _ => "?"
+            };
+        }
+
+        private static float GetDefaultColumnWidth(int column)
+        {
+            return column switch
+            {
+                (int)MsResultColumn.ItemName => 220f,
+                (int)MsResultColumn.ItemId => 80f,
+                (int)MsResultColumn.MarketValue => 120f,
+                (int)MsResultColumn.Avg => 100f,
+                (int)MsResultColumn.Median => 100f,
+                (int)MsResultColumn.MinPrice => 100f,
+                (int)MsResultColumn.PurchaseAmount => 100f,
+                (int)MsResultColumn.QuantitySold => 90f,
+                (int)MsResultColumn.PercentChange => 100f,
+                (int)MsResultColumn.State => 90f,
+                (int)MsResultColumn.Universalis => 70f,
+                (int)MsResultColumn.Vendor => 70f,
+                (int)MsResultColumn.Saddlebag => 70f,
+                _ => 100f
+            };
+        }
+
+        private List<MarketshareResultItem> SortResults(List<MarketshareResultItem> results)
+        {
+            if (_sortColumnIndex < 0 || _sortColumnIndex >= (int)MsResultColumn._Count)
+                return results;
+            var list = new List<MarketshareResultItem>(results);
+            int dir = _sortAscending ? 1 : -1;
+            list.Sort((a, b) =>
+            {
+                int c = _sortColumnIndex switch
+                {
+                    (int)MsResultColumn.ItemName => string.Compare(a.ItemName ?? "", b.ItemName ?? "", StringComparison.Ordinal),
+                    (int)MsResultColumn.ItemId => a.ItemId.CompareTo(b.ItemId),
+                    (int)MsResultColumn.MarketValue => a.MarketValue.CompareTo(b.MarketValue),
+                    (int)MsResultColumn.Avg => a.Avg.CompareTo(b.Avg),
+                    (int)MsResultColumn.Median => a.Median.CompareTo(b.Median),
+                    (int)MsResultColumn.MinPrice => a.MinPrice.CompareTo(b.MinPrice),
+                    (int)MsResultColumn.PurchaseAmount => a.PurchaseAmount.CompareTo(b.PurchaseAmount),
+                    (int)MsResultColumn.QuantitySold => a.QuantitySold.CompareTo(b.QuantitySold),
+                    (int)MsResultColumn.PercentChange => a.PercentChange.CompareTo(b.PercentChange),
+                    (int)MsResultColumn.State => string.Compare(a.State ?? "", b.State ?? "", StringComparison.Ordinal),
+                    _ => 0
+                };
+                return c * dir;
+            });
+            return list;
         }
 
         private void DrawHomeServerCombo()
