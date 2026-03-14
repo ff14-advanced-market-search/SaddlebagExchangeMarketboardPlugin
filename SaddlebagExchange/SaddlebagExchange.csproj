@@ -24,25 +24,31 @@
     <Content Include="Assets\icon.png" CopyToOutputDirectory="PreserveNewest" Link="icon.png" />
   </ItemGroup>
 
-  <!-- Generate manifest.json from project (single source of truth). -->
+  <!-- Generate manifest.json from project (single source of truth). Tags JSON array derived from $(Tags). -->
   <Target Name="GenerateManifest" AfterTargets="Build">
     <PropertyGroup>
-      <_TagsJson>"marketboard", "economy", "gil", "crafting", "money", "trading", "flipping"</_TagsJson>
+      <_TagsJson>&quot;$([System.String]::Copy($(Tags)).Replace(';', '&quot;, &quot;'))&quot;</_TagsJson>
+      <_AuthorEscaped>$([System.String]::Copy($(Author)).Replace('\', '\\').Replace('"', '\"'))</_AuthorEscaped>
+      <_NameEscaped>$([System.String]::Copy($(Name)).Replace('\', '\\').Replace('"', '\"'))</_NameEscaped>
+      <_PunchlineEscaped>$([System.String]::Copy($(Punchline)).Replace('\', '\\').Replace('"', '\"'))</_PunchlineEscaped>
+      <_DescriptionEscaped>$([System.String]::Copy($(Description)).Replace('\', '\\').Replace('"', '\"'))</_DescriptionEscaped>
+      <_RepoUrlEscaped>$([System.String]::Copy($(RepoUrl)).Replace('\', '\\').Replace('"', '\"'))</_RepoUrlEscaped>
+      <_ChangelogEscaped>$([System.String]::Copy($(Changelog)).Replace('\', '\\').Replace('"', '\"'))</_ChangelogEscaped>
     </PropertyGroup>
     <ItemGroup>
       <_ManifestLine Include="{"/>
-      <_ManifestLine Include="  &quot;Author&quot;: &quot;$(Author)&quot;,"/>
-      <_ManifestLine Include="  &quot;Name&quot;: &quot;$(Name)&quot;,"/>
-      <_ManifestLine Include="  &quot;Punchline&quot;: &quot;$(Punchline)&quot;,"/>
-      <_ManifestLine Include="  &quot;Description&quot;: &quot;$(Description)&quot;,"/>
+      <_ManifestLine Include="  &quot;Author&quot;: &quot;$(_AuthorEscaped)&quot;,"/>
+      <_ManifestLine Include="  &quot;Name&quot;: &quot;$(_NameEscaped)&quot;,"/>
+      <_ManifestLine Include="  &quot;Punchline&quot;: &quot;$(_PunchlineEscaped)&quot;,"/>
+      <_ManifestLine Include="  &quot;Description&quot;: &quot;$(_DescriptionEscaped)&quot;,"/>
       <_ManifestLine Include="  &quot;InternalName&quot;: &quot;$(InternalName)&quot;,"/>
       <_ManifestLine Include="  &quot;AssemblyVersion&quot;: &quot;$(AssemblyVersion)&quot;,"/>
       <_ManifestLine Include="  &quot;DalamudApiLevel&quot;: $(DalamudApiLevel),"/>
       <_ManifestLine Include="  &quot;LoadRequiredState&quot;: $(LoadRequiredState),"/>
-      <_ManifestLine Include="  &quot;RepoUrl&quot;: &quot;$(RepoUrl)&quot;,"/>
+      <_ManifestLine Include="  &quot;RepoUrl&quot;: &quot;$(_RepoUrlEscaped)&quot;,"/>
       <_ManifestLine Include="  &quot;Tags&quot;: [$(_TagsJson)],"/>
       <_ManifestLine Include="  &quot;CategoryTags&quot;: [&quot;Utility&quot;, &quot;UI&quot;],"/>
-      <_ManifestLine Include="  &quot;Changelog&quot;: &quot;$(Changelog)&quot;"/>
+      <_ManifestLine Include="  &quot;Changelog&quot;: &quot;$(_ChangelogEscaped)&quot;"/>
       <_ManifestLine Include="}"/>
     </ItemGroup>
     <WriteLinesToFile File="$(OutputPath)manifest.json" Lines="@(_ManifestLine)" Overwrite="true" WriteOnlyWhenDifferent="true" />

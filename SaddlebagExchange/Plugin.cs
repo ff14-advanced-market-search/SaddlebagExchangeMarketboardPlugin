@@ -26,7 +26,7 @@ namespace SaddlebagExchange
             _mainWindow = new MainWindow(pluginInterface);
             _windowSystem.AddWindow(_mainWindow);
             _onDraw = () => _windowSystem.Draw();
-            _onOpenUi = () => _mainWindow.Toggle();
+            _onOpenUi = () => _mainWindow.IsOpen = true;
 
             var uiBuilder = pluginInterface.UiBuilder;
             uiBuilder.Draw += _onDraw;

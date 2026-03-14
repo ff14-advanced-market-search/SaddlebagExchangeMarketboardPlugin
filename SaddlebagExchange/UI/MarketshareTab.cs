@@ -801,36 +801,10 @@ namespace SaddlebagExchange.UI
             int count = _params.Filters?.Length ?? 0;
             ImGui.Text($"Filters Selected: {count}");
             ImGui.Separator();
-            float filterW = 320f * ImGuiHelpers.GlobalScale;
-            float filterH = 400f * ImGuiHelpers.GlobalScale;
-            using (var child = ImRaii.Child("##ms_filter_list", new System.Numerics.Vector2(filterW, filterH), true))
-            {
-                if (child.Success)
-                {
-                    var filters = _params.Filters ?? Array.Empty<int>();
-                    var filterSet = new HashSet<int>(filters);
-                    foreach (var entry in ItemFilterDefs.GetAll())
-                    {
-                        if (entry.IsHeader)
-                        {
-                            ImGui.Spacing();
-                            ImGui.Text(entry.Label);
-                            continue;
-                        }
-                        int id = entry.Id!.Value;
-                        bool isChecked = filterSet.Contains(id);
-                        bool isMainCategory = id >= 1 && id <= 7;
-                        string label = isMainCategory ? entry.Label : "-- " + entry.Label;
-                        if (ImGui.Checkbox(label, ref isChecked))
-                        {
-                            var list = filters.ToList();
-                            if (isChecked) list.Add(id);
-                            else list.Remove(id);
-                            _params.Filters = list.ToArray();
-                        }
-                    }
-                }
-            }
+            ItemFilterListHelper.RenderFilterList(
+                "##ms_filter_list",
+                () => _params.Filters ?? Array.Empty<int>(),
+                val => _params.Filters = val);
             if (ImGui.Button("Close"))
                 ImGui.CloseCurrentPopup();
             ImGui.EndPopup();
