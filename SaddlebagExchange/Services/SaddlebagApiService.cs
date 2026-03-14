@@ -41,5 +41,19 @@ namespace SaddlebagExchange.Services
             var wrapper = JsonSerializer.Deserialize<ResellingScanResponse>(json, JsonOptions);
             return wrapper?.Data ?? new List<ResellingResultItem>();
         }
+
+        /// <summary>
+        /// POST /api/ffxivmarketshare — Market overview. Returns best-selling items by revenue, sales, etc.
+        /// </summary>
+        public async Task<List<MarketshareResultItem>> MarketshareAsync(MarketshareParams request, CancellationToken cancel = default)
+        {
+            using var content = JsonContent.Create(request);
+            using var response = await _http.PostAsync("/api/ffxivmarketshare", content, cancel).ConfigureAwait(false);
+            response.EnsureSuccessStatusCode();
+
+            var json = await response.Content.ReadAsStringAsync(cancel).ConfigureAwait(false);
+            var wrapper = JsonSerializer.Deserialize<MarketshareScanResponse>(json, JsonOptions);
+            return wrapper?.Data ?? new List<MarketshareResultItem>();
+        }
     }
 }
