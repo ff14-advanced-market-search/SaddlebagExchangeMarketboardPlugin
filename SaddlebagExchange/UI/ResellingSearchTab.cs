@@ -345,13 +345,13 @@ namespace SaddlebagExchange.UI
                     if (entry.IsHeader)
                     {
                         ImGui.Spacing();
-                        ImGui.Text("---");
                         ImGui.Text(entry.Label);
                         continue;
                     }
                     int id = entry.Id!.Value;
                     bool isChecked = filterSet.Contains(id);
-                    string label = "-- " + entry.Label;
+                    bool isMainCategory = id >= 1 && id <= 7;
+                    string label = isMainCategory ? entry.Label : "-- " + entry.Label;
                     if (ImGui.Checkbox(label, ref isChecked))
                     {
                         var list = filters.ToList();
