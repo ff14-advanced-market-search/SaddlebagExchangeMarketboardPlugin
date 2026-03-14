@@ -1,3 +1,5 @@
+using System;
+
 namespace SaddlebagExchange.UI
 {
     /// <summary>
@@ -5,6 +7,7 @@ namespace SaddlebagExchange.UI
     /// </summary>
     public static class WorldList
     {
+        private static readonly Lazy<(string DataCenter, string World)[]> AllLazy = new(GetAll);
         public static (string DataCenter, string World)[] GetAll()
         {
             return new[]
@@ -97,8 +100,7 @@ namespace SaddlebagExchange.UI
             };
         }
 
-        private static (string DataCenter, string World)[]? _all;
-        public static (string DataCenter, string World)[] All => _all ??= GetAll();
+        public static (string DataCenter, string World)[] All => AllLazy.Value;
 
         /// <summary>Unique data center names in display order.</summary>
         public static string[] GetDataCenters()

@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Threading.Tasks;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Plugin;
 
@@ -15,7 +16,7 @@ namespace SaddlebagExchange.UI
         private const string DiscordUrl = "https://discord.gg/9dHx2rEq9F";
         private const string WebsiteUrl = "https://saddlebagexchange.com/wow";
 
-        private object? _iconTexture;
+        private volatile object? _iconTexture;
         private bool _iconLoadAttempted;
         private string _defaultDc = string.Empty;
 
@@ -200,15 +201,17 @@ namespace SaddlebagExchange.UI
                 if (textureProvider == null) return;
                 var loadMethod = textureProvider.GetType().GetMethod("GetFromFileAsync", new[] { typeof(string) });
                 if (loadMethod == null) return;
-                var task = loadMethod.Invoke(textureProvider, new object[] { path });
-                if (task == null) return;
-                var getAwaiter = task.GetType().GetMethod("GetAwaiter");
-                if (getAwaiter == null) return;
-                var awaiter = getAwaiter.Invoke(task, null);
-                if (awaiter == null) return;
-                var getResult = awaiter.GetType().GetMethod("GetResult");
-                if (getResult == null) return;
-                _iconTexture = getResult.Invoke(awaiter, null);
+                var taskObj = loadMethod.Invoke(textureProvider, new object[] { path });
+                if (taskObj is not Task task) return;
+                task.ContinueWith(t =>
+                {
+                    if (!t.IsFaulted && t.IsCompletedSuccessfully)
+                    {
+                        var resultProp = t.GetType().GetProperty("Result");
+                        if (resultProp != null)
+                            _iconTexture = resultProp.GetValue(t);
+                    }
+                }, TaskScheduler.Default);
             }
             catch { /* ignore */ }
         }

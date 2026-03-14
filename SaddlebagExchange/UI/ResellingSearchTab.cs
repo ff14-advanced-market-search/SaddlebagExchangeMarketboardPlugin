@@ -12,7 +12,7 @@ using SaddlebagExchange.Services;
 
 namespace SaddlebagExchange.UI
 {
-    public sealed class ResellingSearchTab
+    public sealed class ResellingSearchTab : IDisposable
     {
         private const float SearchInputWidth = 200f;
 
@@ -286,11 +286,9 @@ namespace SaddlebagExchange.UI
                 return;
             }
 
-            if (ImGui.Begin("Saddlebag Exchange - Results", ref _resultsWindowOpen, ImGuiWindowFlags.None))
-            {
-                DrawResultsTable(results);
-                ImGui.End();
-            }
+            ImGui.Begin("Saddlebag Exchange - Results", ref _resultsWindowOpen, ImGuiWindowFlags.None);
+            DrawResultsTable(results);
+            ImGui.End();
         }
 
         private static bool MatchesSearch(ResellingResultItem row, string search)
@@ -310,11 +308,13 @@ namespace SaddlebagExchange.UI
             try
             {
                 if (OperatingSystem.IsWindows())
-                    ClipboardHelper.SetText(text);
-                if (!string.IsNullOrEmpty(notificationMessage))
                 {
-                    _copyNotificationText = notificationMessage;
-                    _copyNotificationUntil = DateTime.UtcNow + TimeSpan.FromSeconds(2);
+                    ClipboardHelper.SetText(text);
+                    if (!string.IsNullOrEmpty(notificationMessage))
+                    {
+                        _copyNotificationText = notificationMessage;
+                        _copyNotificationUntil = DateTime.UtcNow + TimeSpan.FromSeconds(2);
+                    }
                 }
             }
             catch
@@ -448,34 +448,32 @@ namespace SaddlebagExchange.UI
             if (ImGui.IsItemHovered())
                 ImGui.SetTooltip("Number of categories currently selected.");
             ImGui.Separator();
-            if (ImGui.BeginChild("##filter_list", new System.Numerics.Vector2(320, 400), true))
+            ImGui.BeginChild("##filter_list", new System.Numerics.Vector2(320, 400), true);
+            var filters = _params.Filters ?? Array.Empty<int>();
+            var filterSet = new HashSet<int>(filters);
+            foreach (var entry in ItemFilterDefs.GetAll())
             {
-                var filters = _params.Filters ?? Array.Empty<int>();
-                var filterSet = new HashSet<int>(filters);
-                foreach (var entry in ItemFilterDefs.GetAll())
+                if (entry.IsHeader)
                 {
-                    if (entry.IsHeader)
-                    {
-                        ImGui.Spacing();
-                        ImGui.Text(entry.Label);
-                        continue;
-                    }
-                    int id = entry.Id!.Value;
-                    bool isChecked = filterSet.Contains(id);
-                    bool isMainCategory = id >= 1 && id <= 7;
-                    string label = isMainCategory ? entry.Label : "-- " + entry.Label;
-                    if (ImGui.Checkbox(label, ref isChecked))
-                    {
-                        var list = filters.ToList();
-                        if (isChecked)
-                            list.Add(id);
-                        else
-                            list.Remove(id);
-                        _params.Filters = list.ToArray();
-                    }
+                    ImGui.Spacing();
+                    ImGui.Text(entry.Label);
+                    continue;
                 }
-                ImGui.EndChild();
+                int id = entry.Id!.Value;
+                bool isChecked = filterSet.Contains(id);
+                bool isMainCategory = id >= 1 && id <= 7;
+                string label = isMainCategory ? entry.Label : "-- " + entry.Label;
+                if (ImGui.Checkbox(label, ref isChecked))
+                {
+                    var list = filters.ToList();
+                    if (isChecked)
+                        list.Add(id);
+                    else
+                        list.Remove(id);
+                    _params.Filters = list.ToArray();
+                }
             }
+            ImGui.EndChild();
             if (ImGui.Button("Close"))
                 ImGui.CloseCurrentPopup();
             ImGui.EndPopup();
@@ -865,6 +863,8 @@ namespace SaddlebagExchange.UI
             });
             return list;
         }
+
+        public void Dispose() => _api.Dispose();
     }
 
     internal static class ClipboardHelper
@@ -892,6 +892,9 @@ namespace SaddlebagExchange.UI
         [DllImport("kernel32.dll")]
         private static extern bool GlobalUnlock(IntPtr hMem);
 
+        [DllImport("kernel32.dll")]
+        private static extern IntPtr GlobalFree(IntPtr hMem);
+
         private const uint GMEM_MOVEABLE = 0x0002;
 
         public static void SetText(string text)
@@ -900,33 +903,35 @@ namespace SaddlebagExchange.UI
             var bytes = (text.Length + 1) * 2;
             var hMem = GlobalAlloc(GMEM_MOVEABLE, (UIntPtr)bytes);
             if (hMem == IntPtr.Zero) return;
+            var ptr = GlobalLock(hMem);
+            if (ptr == IntPtr.Zero)
+            {
+                GlobalFree(hMem);
+                return;
+            }
             try
             {
-                var ptr = GlobalLock(hMem);
-                if (ptr == IntPtr.Zero) return;
-                try
-                {
-                    Marshal.Copy(text.ToCharArray(), 0, ptr, text.Length);
-                    Marshal.WriteInt16(ptr, text.Length * 2, 0);
-                }
-                finally
-                {
-                    GlobalUnlock(hMem);
-                }
-                if (!OpenClipboard(IntPtr.Zero)) return;
-                try
-                {
-                    EmptyClipboard();
-                    SetClipboardData(CF_UNICODETEXT, hMem);
-                }
-                finally
-                {
-                    CloseClipboard();
-                }
+                Marshal.Copy(text.ToCharArray(), 0, ptr, text.Length);
+                Marshal.WriteInt16(ptr, text.Length * 2, 0);
             }
-            catch
+            finally
             {
-                // GlobalAlloc buffer is abandoned on failure; clipboard may be left empty
+                GlobalUnlock(hMem);
+            }
+            if (!OpenClipboard(IntPtr.Zero))
+            {
+                GlobalFree(hMem);
+                return;
+            }
+            try
+            {
+                EmptyClipboard();
+                if (SetClipboardData(CF_UNICODETEXT, hMem) == IntPtr.Zero)
+                    GlobalFree(hMem);
+            }
+            finally
+            {
+                CloseClipboard();
             }
         }
     }

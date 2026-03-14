@@ -83,6 +83,7 @@ namespace SaddlebagExchange
         public void Dispose()
         {
             if (_pi == null) return;
+            _mainWindow.Dispose();
             var uiBuilder = _pi.UiBuilder;
             uiBuilder.Draw -= Draw;
             uiBuilder.OpenMainUi -= _onOpenMainUi;

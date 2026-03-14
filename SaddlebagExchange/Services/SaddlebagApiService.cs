@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Json;
@@ -12,7 +13,7 @@ namespace SaddlebagExchange.Services
     /// Client for Saddlebag Exchange API (https://api.saddlebagexchange.com).
     /// Wiki notes HTTP may be required due to Cloudflare: http://api.saddlebagexchange.com
     /// </summary>
-    public sealed class SaddlebagApiService
+    public sealed class SaddlebagApiService : IDisposable
     {
         private static readonly JsonSerializerOptions JsonOptions = new()
         {
@@ -55,5 +56,7 @@ namespace SaddlebagExchange.Services
             var wrapper = JsonSerializer.Deserialize<MarketshareScanResponse>(json, JsonOptions);
             return wrapper?.Data ?? new List<MarketshareResultItem>();
         }
+
+        public void Dispose() => _http.Dispose();
     }
 }

@@ -11,7 +11,7 @@ using SaddlebagExchange.Services;
 
 namespace SaddlebagExchange.UI
 {
-    public sealed class MarketshareTab
+    public sealed class MarketshareTab : IDisposable
     {
         private const float InputWidth = 200f;
         private const int SearchBufferSize = 128;
@@ -239,11 +239,9 @@ namespace SaddlebagExchange.UI
                 return;
             }
 
-            if (ImGui.Begin("Saddlebag Exchange - Market Overview Results", ref _resultsWindowOpen, ImGuiWindowFlags.None))
-            {
-                DrawResultsTable(results);
-                ImGui.End();
-            }
+            ImGui.Begin("Saddlebag Exchange - Market Overview Results", ref _resultsWindowOpen, ImGuiWindowFlags.None);
+            DrawResultsTable(results);
+            ImGui.End();
         }
 
         private void DrawResultsTable(List<MarketshareResultItem> results)
@@ -399,11 +397,13 @@ namespace SaddlebagExchange.UI
             try
             {
                 if (OperatingSystem.IsWindows())
-                    ClipboardHelper.SetText(text);
-                if (!string.IsNullOrEmpty(notificationMessage))
                 {
-                    _copyNotificationText = notificationMessage;
-                    _copyNotificationUntil = DateTime.UtcNow + TimeSpan.FromSeconds(2);
+                    ClipboardHelper.SetText(text);
+                    if (!string.IsNullOrEmpty(notificationMessage))
+                    {
+                        _copyNotificationText = notificationMessage;
+                        _copyNotificationUntil = DateTime.UtcNow + TimeSpan.FromSeconds(2);
+                    }
                 }
             }
             catch { /* ignore */ }
@@ -625,32 +625,30 @@ namespace SaddlebagExchange.UI
             int count = _params.Filters?.Length ?? 0;
             ImGui.Text($"Filters Selected: {count}");
             ImGui.Separator();
-            if (ImGui.BeginChild("##ms_filter_list", new System.Numerics.Vector2(320, 400), true))
+            ImGui.BeginChild("##ms_filter_list", new System.Numerics.Vector2(320, 400), true);
+            var filters = _params.Filters ?? Array.Empty<int>();
+            var filterSet = new HashSet<int>(filters);
+            foreach (var entry in ItemFilterDefs.GetAll())
             {
-                var filters = _params.Filters ?? Array.Empty<int>();
-                var filterSet = new HashSet<int>(filters);
-                foreach (var entry in ItemFilterDefs.GetAll())
+                if (entry.IsHeader)
                 {
-                    if (entry.IsHeader)
-                    {
-                        ImGui.Spacing();
-                        ImGui.Text(entry.Label);
-                        continue;
-                    }
-                    int id = entry.Id!.Value;
-                    bool isChecked = filterSet.Contains(id);
-                    bool isMainCategory = id >= 1 && id <= 7;
-                    string label = isMainCategory ? entry.Label : "-- " + entry.Label;
-                    if (ImGui.Checkbox(label, ref isChecked))
-                    {
-                        var list = filters.ToList();
-                        if (isChecked) list.Add(id);
-                        else list.Remove(id);
-                        _params.Filters = list.ToArray();
-                    }
+                    ImGui.Spacing();
+                    ImGui.Text(entry.Label);
+                    continue;
                 }
-                ImGui.EndChild();
+                int id = entry.Id!.Value;
+                bool isChecked = filterSet.Contains(id);
+                bool isMainCategory = id >= 1 && id <= 7;
+                string label = isMainCategory ? entry.Label : "-- " + entry.Label;
+                if (ImGui.Checkbox(label, ref isChecked))
+                {
+                    var list = filters.ToList();
+                    if (isChecked) list.Add(id);
+                    else list.Remove(id);
+                    _params.Filters = list.ToArray();
+                }
             }
+            ImGui.EndChild();
             if (ImGui.Button("Close"))
                 ImGui.CloseCurrentPopup();
             ImGui.EndPopup();
@@ -691,5 +689,7 @@ namespace SaddlebagExchange.UI
                 }
             });
         }
+
+        public void Dispose() => _api.Dispose();
     }
 }

@@ -6,7 +6,7 @@ using Dalamud.Plugin;
 
 namespace SaddlebagExchange.UI
 {
-    public sealed class MainWindow
+    public sealed class MainWindow : IDisposable
     {
         private int _selectedToolIndex;
         private readonly HomeTab _homeTab = new();
@@ -31,8 +31,18 @@ namespace SaddlebagExchange.UI
             _marketshareTab.SetDefaultHomeServer(string.IsNullOrEmpty(_defaultHomeServer) ? null : _defaultHomeServer);
         }
 
-        private static string GetConfigFilePath()
+        private string GetConfigFilePath()
         {
+            if (_pluginInterface != null)
+            {
+                try
+                {
+                    var configDir = _pluginInterface.GetPluginConfigDirectory();
+                    if (!string.IsNullOrEmpty(configDir))
+                        return Path.Combine(configDir, "default_home_server.txt");
+                }
+                catch { /* fallback */ }
+            }
             var dir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             return Path.Combine(dir ?? ".", "default_home_server.txt");
         }
@@ -99,6 +109,12 @@ namespace SaddlebagExchange.UI
             }
 
             ImGui.EndChild();
+        }
+
+        public void Dispose()
+        {
+            _resellingSearch.Dispose();
+            _marketshareTab.Dispose();
         }
     }
 }
