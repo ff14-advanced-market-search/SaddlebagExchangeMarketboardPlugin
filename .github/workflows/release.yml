@@ -39,15 +39,14 @@ jobs:
 
       - name: Create plugin zip
         run: |
-          # Staging dir so we don't overwrite the source SaddlebagExchange/ folder.
-          # Zip must contain one folder "SaddlebagExchange" with DLL + manifest + icon inside.
-          STAGING="release_staging/SaddlebagExchange"
+          # Installer expects files at zip root (no folder). Staging dir to avoid touching source.
+          STAGING="release_staging"
           BIN="SaddlebagExchange/bin/Release"
           mkdir -p "$STAGING"
           cp "$BIN/SaddlebagExchange.dll" "$STAGING/"
           cp "$BIN/icon.png" "$STAGING/"
           cp SaddlebagExchange/manifest.json "$STAGING/"
-          cd release_staging && zip -r ../SaddlebagExchange.zip SaddlebagExchange && cd ..
+          cd "$STAGING" && zip -r ../SaddlebagExchange.zip . && cd ..
           unzip -l SaddlebagExchange.zip
 
       - name: Create Release and upload zip
