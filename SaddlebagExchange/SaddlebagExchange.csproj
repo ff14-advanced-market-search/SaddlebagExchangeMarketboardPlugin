@@ -16,15 +16,6 @@
     <LoadRequiredState>0</LoadRequiredState>
   </PropertyGroup>
 
-  <!-- Use host's ImGui (single cimgui). Do NOT use ImGui.NET - it loads a second cimgui from Temp and crashes. -->
-  <!-- In CI (GITHUB_ACTIONS) we omit this so the SDK provides ImGui; locally we use the host DLL. -->
-  <ItemGroup Condition=" '$(GITHUB_ACTIONS)' != 'true' ">
-    <Reference Include="Dalamud.Bindings.ImGui">
-      <HintPath>$(USERPROFILE)\AppData\Roaming\XIVLauncher\addon\Hooks\14.0.4.1\Dalamud.Bindings.ImGui.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-  </ItemGroup>
-
   <!-- Icon shown in /xlplugins for dev plugins (icon.png next to DLL) -->
   <ItemGroup>
     <Content Include="Assets\icon.png" CopyToOutputDirectory="PreserveNewest" Link="icon.png" />
@@ -34,7 +25,7 @@
   <Target Name="EmitManifestWithApiLevel" AfterTargets="Build">
     <Copy SourceFiles="$(MSBuildProjectDirectory)\manifest.json" DestinationFiles="$(OutputPath)manifest.json" />
     <Exec Command="sed -i 's/__DALAMUD_API_LEVEL__/$(DalamudApiLevel)/g' '$(OutputPath)manifest.json'" Condition="'$(OS)' != 'Windows_NT'" />
-    <Exec Command="powershell -NoProfile -Command \"(Get-Content -Path '$(OutputPath)manifest.json' -Raw) -replace '__DALAMUD_API_LEVEL__', '$(DalamudApiLevel)' | Set-Content -Path '$(OutputPath)manifest.json' -NoNewline\"" Condition="'$(OS)' == 'Windows_NT'" />
+    <Exec Command="powershell -NoProfile -Command &quot;(Get-Content -Path '$(OutputPath)manifest.json' -Raw) -replace '__DALAMUD_API_LEVEL__', '$(DalamudApiLevel)' | Set-Content -Path '$(OutputPath)manifest.json' -NoNewline&quot;" Condition="'$(OS)' == 'Windows_NT'" />
   </Target>
 
   <!-- After build: (1) copy to bin\Debug so "other path" works, (2) copy to XIVLauncher devPlugins -->

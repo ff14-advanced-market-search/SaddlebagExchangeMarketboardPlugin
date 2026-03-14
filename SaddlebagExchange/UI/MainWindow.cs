@@ -1,12 +1,14 @@
 using System;
 using System.IO;
 using System.Reflection;
+using System.Numerics;
 using Dalamud.Bindings.ImGui;
+using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
 
 namespace SaddlebagExchange.UI
 {
-    public sealed class MainWindow : IDisposable
+    public sealed class MainWindow : Window, IDisposable
     {
         private int _selectedToolIndex;
         private readonly HomeTab _homeTab = new();
@@ -15,7 +17,8 @@ namespace SaddlebagExchange.UI
         private readonly IDalamudPluginInterface? _pluginInterface;
         private string _defaultHomeServer = string.Empty;
 
-        public MainWindow(IDalamudPluginInterface? pluginInterface = null)
+        public MainWindow(IDalamudPluginInterface? pluginInterface)
+            : base("Saddlebag Exchange")
         {
             _pluginInterface = pluginInterface;
             LoadDefaultHomeServer();
@@ -99,9 +102,9 @@ namespace SaddlebagExchange.UI
             catch { /* ignore */ }
         }
 
-        public void Draw()
+        public override void Draw()
         {
-            ImGui.BeginChild("##tools_list", new System.Numerics.Vector2(180, -1), true);
+            ImGui.BeginChild("##tools_list", new Vector2(180, -1), true);
             if (ImGui.Selectable("Home", _selectedToolIndex == 0))
                 _selectedToolIndex = 0;
             if (ImGui.Selectable("Reselling Search", _selectedToolIndex == 1))
@@ -111,7 +114,7 @@ namespace SaddlebagExchange.UI
             ImGui.EndChild();
 
             ImGui.SameLine();
-            ImGui.BeginChild("##tool_content", new System.Numerics.Vector2(-1, -1), true);
+            ImGui.BeginChild("##tool_content", new Vector2(-1, -1), true);
 
             switch (_selectedToolIndex)
             {
