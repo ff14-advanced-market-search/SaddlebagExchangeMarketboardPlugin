@@ -7,7 +7,7 @@
   "AssemblyVersion": "1.0.0",
   "DalamudApiLevel": 14,
   "LoadRequiredState": 0,
-  "RepoUrl": "https://github.com/ff14-advanced-market-search/ffxiv-plugin",
+  "RepoUrl": "https://github.com/ff14-advanced-market-search/SaddlebagExchangeMarketboardPlugin",
   "Tags": ["marketboard", "arbitrage", "economy"],
   "Changelog": "Initial release."
 }
