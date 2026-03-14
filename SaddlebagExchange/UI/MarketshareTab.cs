@@ -261,7 +261,9 @@ namespace SaddlebagExchange.UI
                 return;
             }
 
-            string searchFilter = Encoding.UTF8.GetString(_searchBuffer).TrimEnd('\0').Trim();
+            // Normalize search: strip nulls so a "cleared" ImGui buffer (often 0 + leftover bytes) is treated as empty
+            string searchFilter = Encoding.UTF8.GetString(_searchBuffer).TrimEnd('\0');
+            searchFilter = new string(searchFilter.Where(c => c != '\0').ToArray()).Trim();
             var sorted = SortResults(results);
             var filtered = string.IsNullOrWhiteSpace(searchFilter)
                 ? sorted
