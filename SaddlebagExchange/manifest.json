@@ -8,6 +8,6 @@
   "DalamudApiLevel": 14,
   "LoadRequiredState": 0,
   "RepoUrl": "https://github.com/ff14-advanced-market-search/SaddlebagExchangeMarketboardPlugin",
-  "Tags": ["marketboard", "arbitrage", "economy"],
+  "Tags": ["marketboard", "arbitrage", "economy", "gil", "crafting", "money", "trading", "flipping", "materia"],
   "Changelog": "Initial release."
 }

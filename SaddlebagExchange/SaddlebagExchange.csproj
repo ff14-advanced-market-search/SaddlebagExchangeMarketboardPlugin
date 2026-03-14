@@ -16,7 +16,8 @@
   </PropertyGroup>
 
   <!-- Use host's ImGui (single cimgui). Do NOT use ImGui.NET - it loads a second cimgui from Temp and crashes. -->
-  <ItemGroup>
+  <!-- In CI (GITHUB_ACTIONS) we omit this so the SDK provides ImGui; locally we use the host DLL. -->
+  <ItemGroup Condition=" '$(GITHUB_ACTIONS)' != 'true' ">
     <Reference Include="Dalamud.Bindings.ImGui">
       <HintPath>$(USERPROFILE)\AppData\Roaming\XIVLauncher\addon\Hooks\14.0.4.1\Dalamud.Bindings.ImGui.dll</HintPath>
       <Private>false</Private>

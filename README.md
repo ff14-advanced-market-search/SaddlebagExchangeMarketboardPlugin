@@ -2,6 +2,14 @@
 
 FFXIV Dalamud plugin for marketboard analytics and cross-world arbitrage (TSM-style for FFXIV).
 
+## How to get (remote install)
+
+1. **Dalamud** → **Settings** → **Experimental**
+2. Add custom plugin repo: `https://raw.githubusercontent.com/ff14-advanced-market-search/SaddlebagExchangeMarketboardPlugin/main/repo.json` and enable it
+3. Open the plugin list and install **Saddlebag Exchange**
+
+(Releases are built from version tags, e.g. `v1.0.0`; the workflow publishes `SaddlebagExchange.zip` so the repo URL works.)
+
 ## Prerequisites
 
 ### Install .NET 10 SDK

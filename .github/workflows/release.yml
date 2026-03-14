@@ -1,0 +1,42 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Get version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Build
+        run: dotnet build SaddlebagExchange/SaddlebagExchange.csproj -c Release --no-incremental
+
+      - name: Create plugin zip
+        run: |
+          VER="${{ steps.version.outputs.VERSION }}"
+          OUT="SaddlebagExchange/$VER"
+          mkdir -p "$OUT"
+          cp SaddlebagExchange/bin/Release/net10.0/SaddlebagExchange.dll "$OUT/"
+          cp SaddlebagExchange/bin/Release/net10.0/icon.png "$OUT/"
+          cp SaddlebagExchange/manifest.json "$OUT/"
+          zip -r SaddlebagExchange.zip SaddlebagExchange
+
+      - name: Create Release and upload zip
+        uses: softprops/action-gh-release@v2
+        with:
+          files: SaddlebagExchange.zip
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
