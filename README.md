@@ -10,6 +10,27 @@ FFXIV Dalamud plugin for marketboard analytics and cross-world arbitrage (TSM-st
 
 (Releases are built from version tags, e.g. `v1.0.0`; the workflow publishes `SaddlebagExchange.zip` so the repo URL works.)
 
+## Creating a release
+
+1. **Commit and push** all changes (workflow, repo.json, manifest, code).
+2. **Set version** in `SaddlebagExchange/manifest.json` → `AssemblyVersion` (e.g. `"1.0.0"`). Optionally update `repo.json` → `AssemblyVersion` and `LastUpdated` (Unix timestamp) so the plugin list shows the right version.
+3. **Create and push the tag** (use the same version number):
+   ```bash
+   git tag v1.0.0
+   git push origin v1.0.0
+   ```
+4. **GitHub Actions** runs the Release workflow. Check **Actions** on the repo; when the workflow is green, the **Releases** page will have the new release and **SaddlebagExchange.zip**. The “latest” download URL will then serve that zip for remote install.
+
+Quick first release (from repo root):
+
+```bash
+git add -A && git commit -m "Release 1.0.0" && git push origin main
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+(Replace `main` with your default branch if different.)
+
 ## Prerequisites
 
 ### Install .NET 10 SDK
