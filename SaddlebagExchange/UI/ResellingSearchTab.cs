@@ -286,8 +286,8 @@ namespace SaddlebagExchange.UI
                 return;
             }
 
-            ImGui.Begin("Saddlebag Exchange - Results", ref _resultsWindowOpen, ImGuiWindowFlags.None);
-            DrawResultsTable(results);
+            if (ImGui.Begin("Saddlebag Exchange - Results", ref _resultsWindowOpen, ImGuiWindowFlags.None))
+                DrawResultsTable(results);
             ImGui.End();
         }
 

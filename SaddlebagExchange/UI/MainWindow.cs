@@ -47,15 +47,36 @@ namespace SaddlebagExchange.UI
             return Path.Combine(dir ?? ".", "default_home_server.txt");
         }
 
+        private static string GetLegacyConfigFilePath()
+        {
+            var dir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            return Path.Combine(dir ?? ".", "default_home_server.txt");
+        }
+
         private void LoadDefaultHomeServer()
         {
             try
             {
                 var path = GetConfigFilePath();
-                if (!File.Exists(path)) return;
-                var s = File.ReadAllText(path).Trim();
-                if (string.IsNullOrEmpty(s)) return;
-                _defaultHomeServer = s;
+                if (!File.Exists(path))
+                {
+                    var legacyPath = GetLegacyConfigFilePath();
+                    if (legacyPath != path && File.Exists(legacyPath))
+                    {
+                        var s = File.ReadAllText(legacyPath).Trim();
+                        if (!string.IsNullOrEmpty(s))
+                        {
+                            _defaultHomeServer = s;
+                            _resellingSearch.SetDefaultHomeServer(_defaultHomeServer);
+                            _marketshareTab.SetDefaultHomeServer(_defaultHomeServer);
+                            SaveDefaultHomeServer();
+                        }
+                    }
+                    return;
+                }
+                var content = File.ReadAllText(path).Trim();
+                if (string.IsNullOrEmpty(content)) return;
+                _defaultHomeServer = content;
                 _resellingSearch.SetDefaultHomeServer(_defaultHomeServer);
                 _marketshareTab.SetDefaultHomeServer(_defaultHomeServer);
             }

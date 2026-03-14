@@ -239,8 +239,8 @@ namespace SaddlebagExchange.UI
                 return;
             }
 
-            ImGui.Begin("Saddlebag Exchange - Market Overview Results", ref _resultsWindowOpen, ImGuiWindowFlags.None);
-            DrawResultsTable(results);
+            if (ImGui.Begin("Saddlebag Exchange - Market Overview Results", ref _resultsWindowOpen, ImGuiWindowFlags.None))
+                DrawResultsTable(results);
             ImGui.End();
         }
 
@@ -254,7 +254,7 @@ namespace SaddlebagExchange.UI
                 return;
             }
 
-            string searchFilter = Encoding.UTF8.GetString(_searchBuffer).TrimEnd('\0');
+            string searchFilter = Encoding.UTF8.GetString(_searchBuffer).TrimEnd('\0').Trim();
             var sorted = SortResults(results);
             var filtered = string.IsNullOrWhiteSpace(searchFilter)
                 ? sorted
@@ -341,6 +341,17 @@ namespace SaddlebagExchange.UI
                 }
                 ImGui.PopID();
                 rowIndex++;
+            }
+
+            if (filtered.Count == 0 && results.Count > 0)
+            {
+                ImGui.TableNextRow();
+                ImGui.TableNextColumn();
+                ImGui.PushStyleColor(ImGuiCol.Text, new System.Numerics.Vector4(1f, 0.9f, 0.4f, 1f));
+                ImGui.TextWrapped("No rows match your search. Clear the search box above to show all items.");
+                ImGui.PopStyleColor();
+                for (int i = 1; i < visibleCols.Count; i++)
+                    ImGui.TableNextColumn();
             }
 
             ImGui.EndTable();
