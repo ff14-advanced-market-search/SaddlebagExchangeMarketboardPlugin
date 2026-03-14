@@ -22,7 +22,7 @@ namespace SaddlebagExchange
         public Plugin(IDalamudPluginInterface pluginInterface)
         {
             _pi = pluginInterface;
-            // Only Settings button should open the UI. Open button does nothing.
+            // Only Settings button opens the UI; Open button in /xlplugins intentionally does nothing.
             _onOpenMainUi = () => { };
             _onOpenConfigUi = () => _windowOpen = true;
 

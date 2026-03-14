@@ -31,8 +31,8 @@ namespace SaddlebagExchange.UI
         private const int SearchBufferSize = 128;
         private readonly byte[] _searchBuffer = new byte[SearchBufferSize];
         private int _tableIdCounter;
-        private static string? _copyNotificationText;
-        private static DateTime _copyNotificationUntil;
+        private string? _copyNotificationText;
+        private DateTime _copyNotificationUntil;
         private readonly List<int> _columnOrder = new();
         private readonly bool[] _columnVisible = new bool[(int)ResultColumn._Count];
 
@@ -141,6 +141,9 @@ namespace SaddlebagExchange.UI
 
         public void Draw()
         {
+            string errorMessage;
+            lock (_scanLock) { errorMessage = _errorMessage ?? string.Empty; }
+
             ImGui.Spacing();
             ImGui.Text("Reselling Search");
             ImGui.Separator();
@@ -163,22 +166,22 @@ namespace SaddlebagExchange.UI
 
             int preferredRoi = _params.PreferredRoi;
             ImGui.InputInt("Preferred ROI %", ref preferredRoi, 5, 10);
-            _params.PreferredRoi = preferredRoi;
+            _params.PreferredRoi = Math.Max(0, preferredRoi);
             int minProfit = _params.MinProfitAmount;
             ImGui.InputInt("Min profit (gil)", ref minProfit, 1000, 5000);
-            _params.MinProfitAmount = minProfit;
+            _params.MinProfitAmount = Math.Max(0, minProfit);
             int minPpu = _params.MinDesiredAvgPpu;
             ImGui.InputInt("Min avg price (gil)", ref minPpu, 1000, 5000);
-            _params.MinDesiredAvgPpu = minPpu;
+            _params.MinDesiredAvgPpu = Math.Max(0, minPpu);
             int minStack = _params.MinStackSize;
             ImGui.InputInt("Min stack size", ref minStack, 1, 10);
-            _params.MinStackSize = minStack;
+            _params.MinStackSize = Math.Max(1, minStack);
             int hoursAgo = _params.HoursAgo;
             ImGui.InputInt("Hours of data", ref hoursAgo, 24, 168);
-            _params.HoursAgo = hoursAgo;
+            _params.HoursAgo = Math.Max(1, hoursAgo);
             int minSales = _params.MinSales;
             ImGui.InputInt("Min sales", ref minSales, 1, 5);
-            _params.MinSales = minSales;
+            _params.MinSales = Math.Max(0, minSales);
             bool hq = _params.Hq;
             ImGui.Checkbox("HQ only", ref hq);
             _params.Hq = hq;
@@ -203,8 +206,8 @@ namespace SaddlebagExchange.UI
             ImGui.Spacing();
             bool doSearch = ImGui.Button("Search");
             ImGui.SameLine();
-            if (!string.IsNullOrEmpty(_errorMessage))
-                ImGui.TextColored(new System.Numerics.Vector4(1f, 0.4f, 0.4f, 1f), _errorMessage);
+            if (!string.IsNullOrEmpty(errorMessage))
+                ImGui.TextColored(new System.Numerics.Vector4(1f, 0.4f, 0.4f, 1f), errorMessage);
 
             if (doSearch)
                 StartScan();
@@ -234,7 +237,6 @@ namespace SaddlebagExchange.UI
                 return;
             }
 
-            _resultsWindowOpen = true;
             if (ImGui.Begin("Saddlebag Exchange - Results", ref _resultsWindowOpen, ImGuiWindowFlags.None))
             {
                 DrawResultsTable(results);
@@ -253,12 +255,13 @@ namespace SaddlebagExchange.UI
                    || row.ItemId.ToString().Contains(term, comparison);
         }
 
-        private static void SetClipboardText(string? text, string? notificationMessage = null)
+        private void SetClipboardTextAndNotify(string? text, string? notificationMessage = null)
         {
             if (string.IsNullOrEmpty(text)) return;
             try
             {
-                ClipboardHelper.SetText(text);
+                if (OperatingSystem.IsWindows())
+                    ClipboardHelper.SetText(text);
                 if (!string.IsNullOrEmpty(notificationMessage))
                 {
                     _copyNotificationText = notificationMessage;
@@ -274,9 +277,11 @@ namespace SaddlebagExchange.UI
         private static void OpenUrl(string? url)
         {
             if (string.IsNullOrEmpty(url)) return;
+            if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || !uri.IsAbsoluteUri)
+                return;
             try
             {
-                using var _ = Process.Start(new ProcessStartInfo { FileName = url, UseShellExecute = true });
+                using var _ = Process.Start(new ProcessStartInfo { FileName = uri.ToString(), UseShellExecute = true });
             }
             catch { /* ignore */ }
         }
@@ -314,11 +319,14 @@ namespace SaddlebagExchange.UI
             _params.HomeServer = _homeServerBuffer.Trim();
             if (string.IsNullOrEmpty(_params.HomeServer))
             {
-                _errorMessage = "Set Home server first.";
+                lock (_scanLock) { _errorMessage = "Set Home server first."; }
                 return;
             }
-            _errorMessage = string.Empty;
-            lock (_scanLock) { _scanInProgress = true; }
+            lock (_scanLock)
+            {
+                _errorMessage = string.Empty;
+                _scanInProgress = true;
+            }
             _ = Task.Run(async () =>
             {
                 try
@@ -328,6 +336,8 @@ namespace SaddlebagExchange.UI
                     {
                         _scanResults = list ?? new List<ResellingResultItem>();
                         _scanInProgress = false;
+                        if (list != null && list.Count > 0)
+                            _resultsWindowOpen = true;
                     }
                 }
                 catch (System.Exception ex)
@@ -336,8 +346,8 @@ namespace SaddlebagExchange.UI
                     {
                         _scanResults = new List<ResellingResultItem>();
                         _scanInProgress = false;
+                        _errorMessage = ex.Message;
                     }
-                    _errorMessage = ex.Message;
                 }
             });
         }
@@ -385,8 +395,7 @@ namespace SaddlebagExchange.UI
             var filtered = string.IsNullOrWhiteSpace(searchFilter)
                 ? sorted
                 : sorted.Where(r => MatchesSearch(r, searchFilter)).ToList();
-            if (ImGui.InputText("Search", _searchBuffer, ImGuiInputTextFlags.None))
-            { }
+            ImGui.InputText("Search", _searchBuffer, ImGuiInputTextFlags.None);
             string countText = string.IsNullOrWhiteSpace(searchFilter)
                 ? $"Results: {results.Count} items (click header to sort, scroll horizontally for more columns)"
                 : $"Results: {results.Count} items ({filtered.Count} matching)";
@@ -465,7 +474,7 @@ namespace SaddlebagExchange.UI
                 foreach (int colId in visibleCols)
                 {
                     ImGui.TableNextColumn();
-                    DrawCell(row, colId);
+                    DrawCell(row, colId, SetClipboardTextAndNotify);
                 }
                 ImGui.PopID();
                 rowIndex++;
@@ -509,14 +518,14 @@ namespace SaddlebagExchange.UI
             }
         }
 
-        private static void DrawCell(ResellingResultItem row, int colId)
+        private static void DrawCell(ResellingResultItem row, int colId, Action<string?, string?>? copyNotify = null)
         {
             switch ((ResultColumn)colId)
             {
                 case ResultColumn.ItemName:
                     string name = row.ItemName ?? row.ItemId.ToString();
                     if (ImGui.Selectable(name, false, ImGuiSelectableFlags.None, System.Numerics.Vector2.Zero))
-                        SetClipboardText(name, "Item name copied to clipboard");
+                        copyNotify?.Invoke(name, "Item name copied to clipboard");
                     break;
                 case ResultColumn.ProfitAmount:
                     ImGui.Text(row.Profit >= 999_999_999 ? "∞" : row.Profit.ToString("N0"));
@@ -667,9 +676,9 @@ namespace SaddlebagExchange.UI
                     (int)ResultColumn.ProfitAmount => a.Profit.CompareTo(b.Profit),
                     (int)ResultColumn.AvgPpu => a.SellPrice.CompareTo(b.SellPrice),
                     (int)ResultColumn.HomePrice => a.HomeServerPrice.CompareTo(b.HomeServerPrice),
-                    (int)ResultColumn.HomeUpdated => string.Compare(a.HomeUpdateTime ?? "", b.HomeUpdateTime ?? "", StringComparison.Ordinal),
+                    (int)ResultColumn.HomeUpdated => (long.TryParse(a.HomeUpdateTime, out var ha) ? ha : 0L).CompareTo(long.TryParse(b.HomeUpdateTime, out var hb) ? hb : 0L),
                     (int)ResultColumn.LowestPpu => a.BuyPrice.CompareTo(b.BuyPrice),
-                    (int)ResultColumn.LowestUpdated => string.Compare(a.UpdateTime ?? "", b.UpdateTime ?? "", StringComparison.Ordinal),
+                    (int)ResultColumn.LowestUpdated => (long.TryParse(a.UpdateTime, out var ua) ? ua : 0L).CompareTo(long.TryParse(b.UpdateTime, out var ub) ? ub : 0L),
                     (int)ResultColumn.ProfitPercent => a.ProfitPercent.CompareTo(b.ProfitPercent),
                     (int)ResultColumn.Roi => a.Roi.CompareTo(b.Roi),
                     (int)ResultColumn.SalesPerHour => a.SaleRates.CompareTo(b.SaleRates),

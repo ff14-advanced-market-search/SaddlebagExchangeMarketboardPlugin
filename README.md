@@ -4,17 +4,17 @@ FFXIV Dalamud plugin for marketboard analytics and cross-world arbitrage (TSM-st
 
 ## Prerequisites
 
-### Install .NET 8 SDK
+### Install .NET 10 SDK
 
-You need the .NET 8 SDK to build. Install one of these ways:
+You need the .NET 10 SDK to build. Install one of these ways:
 
 **Option A – Download (recommended)**  
-- [.NET 8 SDK – Windows x64](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)  
-- Run the installer, then open a **new** terminal and run: `dotnet --version` (should show 8.x.x).
+- [.NET 10 SDK – Windows x64](https://dotnet.microsoft.com/en-us/download/dotnet/10.0)  
+- Run the installer, then open a **new** terminal and run: `dotnet --version` (should show 10.x.x).
 
 **Option B – Winget**  
 ```bash
-winget install Microsoft.DotNet.SDK.8
+winget install Microsoft.DotNet.SDK.10
 ```
 
 Then close and reopen your terminal so `dotnet` is on PATH.
@@ -43,7 +43,7 @@ dotnet build
 
 Output:
 
-- `SaddlebagExchange/bin/Debug/net8.0/SaddlebagExchange.dll`
+- `SaddlebagExchange/bin/Debug/net10.0/SaddlebagExchange.dll`
 - (Manifest is already in `SaddlebagExchange/manifest.json`.)
 
 ## Install as dev plugin
@@ -55,7 +55,7 @@ Output:
    Example: `C:\Users\<You>\AppData\Roaming\XIVLauncher\devPlugins\SaddlebagExchange`
 
 2. Copy into that folder:
-   - `SaddlebagExchange/bin/Debug/net8.0/SaddlebagExchange.dll`
+   - `SaddlebagExchange/bin/Debug/net10.0/SaddlebagExchange.dll`
    - `SaddlebagExchange/manifest.json`
 
 ## Load in game

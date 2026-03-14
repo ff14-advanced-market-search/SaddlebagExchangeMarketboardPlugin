@@ -24,7 +24,8 @@ namespace SaddlebagExchange.Services
         private readonly HttpClient _http = new()
         {
             BaseAddress = new Uri("https://api.saddlebagexchange.com"),
-            DefaultRequestHeaders = { { "Accept", "application/json" } }
+            DefaultRequestHeaders = { { "Accept", "application/json" } },
+            Timeout = TimeSpan.FromSeconds(30)
         };
 
         /// <summary>
