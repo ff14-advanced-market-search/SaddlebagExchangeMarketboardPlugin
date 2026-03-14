@@ -101,6 +101,8 @@ In-game chat:
 
 ```
 /saddlebag
+/sbex
+/saddlebagexchange
 ```
 
 You should see a window: **Saddlebag Exchange** with “Market tools coming soon.”
