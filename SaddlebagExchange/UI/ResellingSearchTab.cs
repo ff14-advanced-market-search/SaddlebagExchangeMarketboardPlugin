@@ -167,40 +167,64 @@ namespace SaddlebagExchange.UI
 
             int preferredRoi = _params.PreferredRoi;
             ImGui.InputInt("Preferred ROI %", ref preferredRoi, 5, 10);
+            ImGui.SameLine();
+            DrawHelpMarker("Desired R.O.I (return on investment): ex: 50 means that 50% of the revenue you get from a sale should be all profit (after tax). For more profit, choose a higher number from 1 to 100.");
             _params.PreferredRoi = Math.Max(0, preferredRoi);
             int minProfit = _params.MinProfitAmount;
             ImGui.InputInt("Min profit (gil)", ref minProfit, 1000, 5000);
+            ImGui.SameLine();
+            DrawHelpMarker("Desired Min Profit Amount. ex: 10000 is only show deals that yields 10000 gil profit or greater. For more items to sell choose a lower number.");
             _params.MinProfitAmount = Math.Max(0, minProfit);
             int minPpu = _params.MinDesiredAvgPpu;
             ImGui.InputInt("Min avg price (gil)", ref minPpu, 1000, 5000);
+            ImGui.SameLine();
+            DrawHelpMarker("Desired Average Price Per Unit. ex: 10000 is only show deals that sell on average for 10000 gil or greater. For more items to sell choose a lower number.");
             _params.MinDesiredAvgPpu = Math.Max(0, minPpu);
             int minStack = _params.MinStackSize;
             ImGui.InputInt("Min stack size", ref minStack, 1, 10);
+            ImGui.SameLine();
+            DrawHelpMarker("Desired Min Stack Size. ex: 10 is only show deals you can get in stacks of 10 or greater. For more items to sell choose a lower number.");
             _params.MinStackSize = Math.Max(1, minStack);
             int hoursAgo = _params.HoursAgo;
             ImGui.InputInt("Hours of data", ref hoursAgo, 24, 168);
+            ImGui.SameLine();
+            DrawHelpMarker("The time period to search over. ex: 24 is the past 24 hours. For more items to sell choose a higher number.");
             _params.HoursAgo = Math.Max(1, hoursAgo);
             int minSales = _params.MinSales;
             ImGui.InputInt("Min sales", ref minSales, 1, 5);
+            ImGui.SameLine();
+            DrawHelpMarker("Number of sales in that time. ex: 5 is 5 sales in that selected time period. For more items to sell choose a lower number.");
             _params.MinSales = Math.Max(0, minSales);
             bool hq = _params.Hq;
             ImGui.Checkbox("HQ only", ref hq);
+            ImGui.SameLine();
+            DrawHelpMarker("Only search for hq prices");
             _params.Hq = hq;
             bool regionWide = _params.RegionWide;
             ImGui.Checkbox("Region-wide", ref regionWide);
+            ImGui.SameLine();
+            DrawHelpMarker("Search all servers in all DataCenters in your region.");
             _params.RegionWide = regionWide;
             bool includeVendor = _params.IncludeVendor;
             ImGui.Checkbox("Include vendor", ref includeVendor);
+            ImGui.SameLine();
+            DrawHelpMarker("Compare market prices vs vendor prices on NQ items that can be purchased from vendors.");
             _params.IncludeVendor = includeVendor;
             bool showOutStock = _params.ShowOutStock;
             ImGui.Checkbox("Show out of stock", ref showOutStock);
+            ImGui.SameLine();
+            DrawHelpMarker("Include out of stock items from the list (they will show up as having 100% profit margins and 1 bil gil profit).");
             _params.ShowOutStock = showOutStock;
 
             int filterCount = _params.Filters?.Length ?? 0;
             if (ImGui.Button($"Filters ({filterCount})"))
                 _showFiltersPopup = true;
+            if (ImGui.IsItemHovered())
+                ImGui.SetTooltip("Choose which item categories to include in the search. Each option is sent as a filter ID to the API.");
             ImGui.SameLine();
             ImGui.Text("Item categories to include in search");
+            if (ImGui.IsItemHovered())
+                ImGui.SetTooltip("Choose which item categories to include in the search. Each option is sent as a filter ID to the API.");
 
             int len = Encoding.UTF8.GetBytes(_homeServerBuffer, 0, Math.Min(_homeServerBuffer.Length, HomeServerBufferSize - 1), _homeServerBytes, 0);
             _homeServerBytes[len] = 0;
@@ -323,6 +347,13 @@ namespace SaddlebagExchange.UI
                 _homeServerBuffer = p.HomeServer.Length <= HomeServerBufferSize ? p.HomeServer : p.HomeServer.Substring(0, HomeServerBufferSize);
         }
 
+        private static void DrawHelpMarker(string tooltip)
+        {
+            ImGui.TextDisabled("(?)");
+            if (ImGui.IsItemHovered())
+                ImGui.SetTooltip(tooltip);
+        }
+
         private void DrawFiltersPopup()
         {
             if (_showFiltersPopup)
@@ -335,6 +366,8 @@ namespace SaddlebagExchange.UI
 
             int count = _params.Filters?.Length ?? 0;
             ImGui.Text($"Filters Selected: {count}");
+            if (ImGui.IsItemHovered())
+                ImGui.SetTooltip("Number of category filters currently applied. Each selected checkbox adds its ID to the search request.");
             ImGui.Separator();
             if (ImGui.BeginChild("##filter_list", new System.Numerics.Vector2(320, 400), true))
             {
