@@ -28,6 +28,7 @@ namespace SaddlebagExchange.UI
         private bool _sortAscending = true;
         private bool _resultsWindowOpen;
         private bool _showColumnsPopup;
+        private bool _showFiltersPopup;
         private const int SearchBufferSize = 128;
         private readonly byte[] _searchBuffer = new byte[SearchBufferSize];
         private int _tableIdCounter;
@@ -195,6 +196,12 @@ namespace SaddlebagExchange.UI
             ImGui.Checkbox("Show out of stock", ref showOutStock);
             _params.ShowOutStock = showOutStock;
 
+            int filterCount = _params.Filters?.Length ?? 0;
+            if (ImGui.Button($"Filters ({filterCount})"))
+                _showFiltersPopup = true;
+            ImGui.SameLine();
+            ImGui.Text("Item categories to include in search");
+
             int len = Encoding.UTF8.GetBytes(_homeServerBuffer, 0, Math.Min(_homeServerBuffer.Length, HomeServerBufferSize - 1), _homeServerBytes, 0);
             _homeServerBytes[len] = 0;
             if (ImGui.InputText("Home server", _homeServerBytes, ImGuiInputTextFlags.None))
@@ -211,6 +218,8 @@ namespace SaddlebagExchange.UI
 
             if (doSearch)
                 StartScan();
+
+            DrawFiltersPopup();
 
             ImGui.Spacing();
             ImGui.Separator();
@@ -312,6 +321,51 @@ namespace SaddlebagExchange.UI
             _params.Filters = p.Filters.ToArray();
             if (!string.IsNullOrEmpty(p.HomeServer))
                 _homeServerBuffer = p.HomeServer.Length <= HomeServerBufferSize ? p.HomeServer : p.HomeServer.Substring(0, HomeServerBufferSize);
+        }
+
+        private void DrawFiltersPopup()
+        {
+            if (_showFiltersPopup)
+            {
+                ImGui.OpenPopup("Item filters");
+                _showFiltersPopup = false;
+            }
+            if (!ImGui.BeginPopup("Item filters"))
+                return;
+
+            int count = _params.Filters?.Length ?? 0;
+            ImGui.Text($"Filters Selected: {count}");
+            ImGui.Separator();
+            if (ImGui.BeginChild("##filter_list", new System.Numerics.Vector2(320, 400), true))
+            {
+                var filters = _params.Filters ?? Array.Empty<int>();
+                var filterSet = new HashSet<int>(filters);
+                foreach (var entry in ItemFilterDefs.GetAll())
+                {
+                    if (entry.IsHeader)
+                    {
+                        ImGui.Spacing();
+                        ImGui.Text(entry.Label);
+                        continue;
+                    }
+                    int id = entry.Id!.Value;
+                    bool isChecked = filterSet.Contains(id);
+                    string label = "-- " + entry.Label;
+                    if (ImGui.Checkbox(label, ref isChecked))
+                    {
+                        var list = filters.ToList();
+                        if (isChecked)
+                            list.Add(id);
+                        else
+                            list.Remove(id);
+                        _params.Filters = list.ToArray();
+                    }
+                }
+                ImGui.EndChild();
+            }
+            if (ImGui.Button("Close"))
+                ImGui.CloseCurrentPopup();
+            ImGui.EndPopup();
         }
 
         private void StartScan()
