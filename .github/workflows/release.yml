@@ -21,6 +21,14 @@ jobs:
         id: version
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
 
+      - name: Setup Dalamud libs for build
+        run: |
+          DALAMUD_DIR="$RUNNER_WORKSPACE/dalamud_libs"
+          mkdir -p "$DALAMUD_DIR"
+          curl -sL -o /tmp/dalamud.zip "https://github.com/goatcorp/dalamud-distrib/raw/main/latest.zip"
+          unzip -q -o /tmp/dalamud.zip -d "$DALAMUD_DIR"
+          echo "DALAMUD_HOME=$DALAMUD_DIR" >> $GITHUB_ENV
+
       - name: Build
         run: dotnet build SaddlebagExchange/SaddlebagExchange.csproj -c Release --no-incremental
 

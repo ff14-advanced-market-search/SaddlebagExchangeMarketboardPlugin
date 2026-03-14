@@ -29,6 +29,11 @@
     <Content Include="Assets\icon.png" CopyToOutputDirectory="PreserveNewest" Link="icon.png" />
   </ItemGroup>
 
+  <!-- In CI there is no local Dalamud install; skip the SDK's path check so the build can run. -->
+  <Target Name="EnsureDalamudLibPathExists" BeforeTargets="BeforeBuild">
+    <Error Text="Dalamud.NET.Sdk: Dalamud installation not found at $(DalamudLibPath)" Condition="!Exists('$(DalamudLibPath)') and '$(GITHUB_ACTIONS)' != 'true'" />
+  </Target>
+
   <!-- After build: (1) copy to bin\Debug so "other path" works, (2) copy to XIVLauncher devPlugins -->
   <Target Name="CopyToDevPlugins" AfterTargets="Build" Condition=" '$(Configuration)' == 'Debug' ">
     <PropertyGroup>
