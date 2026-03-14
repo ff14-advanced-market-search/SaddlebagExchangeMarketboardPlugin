@@ -6,6 +6,8 @@ The [Saddlebag Exchange](https://saddlebagexchange.com/ffxiv) website but now in
 
 ## Install (for players)
 
+[Setup with pictures](https://github.com/ff14-advanced-market-search/SaddlebagExchangeMarketboardPlugin/wiki/Install-with-pictures)
+
 Install via Dalamud’s custom repo using the `repo.json` feed:
 
 1. Open **XIVLauncher** / **Dalamud** → **Settings** → **Experimental**.
