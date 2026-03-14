@@ -10,7 +10,7 @@
     <Punchline>Marketboard analytics for FFXIV</Punchline>
     <Description>Advanced marketboard tools and cross-world arbitrage scanning.</Description>
     <InternalName>SaddlebagExchange</InternalName>
-    <AssemblyVersion>1.0.4</AssemblyVersion>
+    <AssemblyVersion>1.0.5</AssemblyVersion>
     <DalamudApiLevel>14</DalamudApiLevel>
     <LoadRequiredState>0</LoadRequiredState>
   </PropertyGroup>
