@@ -1,8 +1,8 @@
 using System;
 using System.IO;
 using System.Reflection;
-using System.Threading.Tasks;
 using Dalamud.Bindings.ImGui;
+using Dalamud.Interface.Textures;
 using Dalamud.Interface.Textures.TextureWraps;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
@@ -20,7 +20,7 @@ namespace SaddlebagExchange.UI
         private const string DiscordUrl = "https://discord.gg/9dHx2rEq9F";
         private const string WebsiteUrl = "https://saddlebagexchange.com/wow";
 
-        private IDalamudTextureWrap? _iconTexture;
+        private ISharedImmediateTexture? _iconTexture;
         private bool _iconLoadAttempted;
         private string _defaultDc = string.Empty;
 
@@ -33,13 +33,14 @@ namespace SaddlebagExchange.UI
             {
                 try
                 {
-                    var size = _iconTexture.Size;
+                    var wrap = _iconTexture.GetWrapOrEmpty();
+                    var size = wrap.Size;
                     if (size.X > 0 && size.Y > 0)
                     {
                         float maxSide = 128f * ImGuiHelpers.GlobalScale;
                         float scale = Math.Min(Math.Min(maxSide / size.X, maxSide / size.Y), 1f);
                         var displaySize = new System.Numerics.Vector2(size.X * scale, size.Y * scale);
-                        ImGui.Image(_iconTexture.ImGuiHandle, displaySize);
+                        ImGui.Image(wrap.Handle, displaySize);
                         ImGui.Spacing();
                     }
                 }
@@ -208,13 +209,9 @@ namespace SaddlebagExchange.UI
                 var dir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
                 var path = Path.Combine(dir ?? ".", "icon.png");
                 if (!File.Exists(path)) return;
-                var textureProvider = pluginInterface.GetService<ITextureProvider>();
+                var textureProvider = pluginInterface.GetService(typeof(ITextureProvider)) as ITextureProvider;
                 if (textureProvider == null) return;
-                _ = textureProvider.GetFromFileAsync(path).ContinueWith(t =>
-                {
-                    if (t.IsCompletedSuccessfully && t.Result != null)
-                        _iconTexture = t.Result;
-                });
+                _iconTexture = textureProvider.GetFromFileAbsolute(path);
             }
             catch { /* ignore */ }
         }

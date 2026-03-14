@@ -16,12 +16,12 @@ namespace SaddlebagExchange
         private readonly Action _onDraw;
         private readonly Action _onOpenUi;
         private IDalamudPluginInterface? _pi;
-        private ICommandManager? _cmd;
-        private bool _commandsRegistered;
+        private ICommandManager _cmd;
 
-        public Plugin(IDalamudPluginInterface pluginInterface)
+        public Plugin(IDalamudPluginInterface pluginInterface, ICommandManager commandManager)
         {
             _pi = pluginInterface;
+            _cmd = commandManager;
             _windowSystem = new WindowSystem(Name);
             _mainWindow = new MainWindow(pluginInterface);
             _windowSystem.AddWindow(_mainWindow);
@@ -33,24 +33,16 @@ namespace SaddlebagExchange
             uiBuilder.OpenMainUi += _onOpenUi;
             uiBuilder.OpenConfigUi += _onOpenUi;
 
-            TryRegisterCommands();
-            TrySetDefaultHomeServer(pluginInterface);
-        }
-
-        private void TryRegisterCommands()
-        {
-            if (_pi == null || _commandsRegistered) return;
-            _cmd = _pi.GetService(typeof(ICommandManager)) as ICommandManager;
-            if (_cmd == null) return;
             var help = "Open Saddlebag Exchange window";
             try
             {
                 _cmd.AddHandler("/saddlebag", new CommandInfo(OnCommand) { HelpMessage = help });
                 _cmd.AddHandler("/saddlebagexchange", new CommandInfo(OnCommand) { HelpMessage = help });
                 _cmd.AddHandler("/sbex", new CommandInfo(OnCommand) { HelpMessage = help });
-                _commandsRegistered = true;
             }
             catch { /* ignore if already registered or failed */ }
+
+            TrySetDefaultHomeServer(pluginInterface);
         }
 
         private void TrySetDefaultHomeServer(IDalamudPluginInterface pi)
@@ -73,10 +65,9 @@ namespace SaddlebagExchange
             uiBuilder.Draw -= _onDraw;
             uiBuilder.OpenMainUi -= _onOpenUi;
             uiBuilder.OpenConfigUi -= _onOpenUi;
-            _cmd?.RemoveHandler("/saddlebag");
-            _cmd?.RemoveHandler("/saddlebagexchange");
-            _cmd?.RemoveHandler("/sbex");
-            _cmd = null;
+            _cmd.RemoveHandler("/saddlebag");
+            _cmd.RemoveHandler("/saddlebagexchange");
+            _cmd.RemoveHandler("/sbex");
             _pi = null;
         }
     }
