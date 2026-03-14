@@ -46,16 +46,6 @@ Updates are delivered through the same repo; the installer will use the latest r
    ```
 4. **GitHub Actions** runs the Release workflow. Check **Actions** on the repo; when the workflow is green, the **Releases** page will have the new release and **SaddlebagExchange.zip**. The “latest” download URL will then serve that zip for remote install.
 
-Quick first release (from repo root):
-
-```bash
-git add -A && git commit -m "Release 1.0.0" && git push origin main
-git tag v1.0.0
-git push origin v1.0.0
-```
-
-(Replace `main` with your default branch if different.)
-
 **Commands to run for a version bump release** (from repo root; replace `1.0.7` and `main` as needed):
 
 ```bash

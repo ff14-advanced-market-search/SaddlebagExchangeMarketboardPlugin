@@ -35,14 +35,13 @@ jobs:
           echo "DALAMUD_HOME=$DALAMUD_DIR" >> $GITHUB_ENV
 
       - name: Build
-        run: dotnet build SaddlebagExchange/SaddlebagExchange.csproj -c Release --no-incremental
+        run: dotnet build SaddlebagExchange/SaddlebagExchange.csproj -c Release --no-incremental -o release_output
 
       - name: Create plugin zip
         run: |
-          # Installer expects files at zip root (no folder). Staging dir to avoid touching source.
-          # Build output is under bin/Release/$(TargetFramework) (e.g. net10.0).
+          # Installer expects files at zip root (no folder). -o release_output above so we have a known path.
           STAGING="release_staging"
-          BIN="SaddlebagExchange/bin/Release/net10.0"
+          BIN="release_output"
           mkdir -p "$STAGING"
           cp "$BIN/SaddlebagExchange.dll" "$STAGING/"
           cp "$BIN/icon.png" "$STAGING/"
