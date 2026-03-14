@@ -625,19 +625,20 @@ namespace SaddlebagExchange.UI
             };
         }
 
-        // State-based treemap colors. API: 'spiking' | 'increasing' | 'stable' | 'decreasing' | 'crashing' | 'out of stock'
-        // Out of stock = yellow; stable = blue (matches frontend). Decreasing = light red (no purple). Increasing/spiking = greens unchanged.
-        private static uint TreemapColorForState(string? state)
+        // State RGB as Vector4(r,g,b,a). API: 'spiking' | 'increasing' | 'stable' | 'decreasing' | 'crashing' | 'out of stock'
+        // Out of stock = blue; stable = yellow
+        private static System.Numerics.Vector4 TreemapColorForState(string? state)
         {
-            if (string.IsNullOrEmpty(state)) return 0xFF6B6B6B;
+            if (string.IsNullOrEmpty(state)) return new System.Numerics.Vector4(0.42f, 0.42f, 0.42f, 1f);
             var s = state.Trim();
-            if (string.Equals(s, "out of stock", StringComparison.OrdinalIgnoreCase)) return 0xFFFFEB3B;   // yellow
-            if (string.Equals(s, "stable", StringComparison.OrdinalIgnoreCase)) return 0xFF2196F3;         // blue
-            if (string.Equals(s, "increasing", StringComparison.OrdinalIgnoreCase)) return 0xFF8BC34A;     // light green
-            if (string.Equals(s, "spiking", StringComparison.OrdinalIgnoreCase)) return 0xFF4CAF50;       // full green
-            if (string.Equals(s, "decreasing", StringComparison.OrdinalIgnoreCase)) return 0xFFFF8080;     // light red (R-heavy, no blue tint)
-            if (string.Equals(s, "crashing", StringComparison.OrdinalIgnoreCase)) return 0xFFD32F2F;     // full red
-            return 0xFF6B6B6B;
+            if (string.Equals(s, "out of stock", StringComparison.OrdinalIgnoreCase)) return new System.Numerics.Vector4(0.13f, 0.59f, 0.95f, 1f);   // blue
+            if (string.Equals(s, "stable", StringComparison.OrdinalIgnoreCase)) return new System.Numerics.Vector4(1f, 0.92f, 0.23f, 1f);       // yellow
+            if (string.Equals(s, "increasing", StringComparison.OrdinalIgnoreCase)) return new System.Numerics.Vector4(0.55f, 0.76f, 0.29f, 1f);   // light green
+            if (string.Equals(s, "spiking", StringComparison.OrdinalIgnoreCase)) return new System.Numerics.Vector4(0.30f, 0.69f, 0.31f, 1f);     // full green
+            // Red family: high R, low B (never high B — that reads purple on ImGui tinting)
+            if (string.Equals(s, "decreasing", StringComparison.OrdinalIgnoreCase)) return new System.Numerics.Vector4(1f, 0.45f, 0.38f, 1f);    // light red / coral-red
+            if (string.Equals(s, "crashing", StringComparison.OrdinalIgnoreCase)) return new System.Numerics.Vector4(0.86f, 0.18f, 0.14f, 1f);    // dark red
+            return new System.Numerics.Vector4(0.42f, 0.42f, 0.42f, 1f);
         }
 
         private void DrawTreemapWindow()
@@ -738,8 +739,7 @@ namespace SaddlebagExchange.UI
                     float cellW = (float)(val / rowSum) * canvasW;
                     if (cellW < 2f) cellW = 2f;
                     ImGui.SetCursorPos(new System.Numerics.Vector2(x, y));
-                    uint col = TreemapColorForState(rowItem.State);
-                    var colV4 = ImGui.ColorConvertU32ToFloat4(col);
+                    var colV4 = TreemapColorForState(rowItem.State);
                     ImGui.PushStyleColor(ImGuiCol.Button, colV4);
                     ImGui.PushStyleColor(ImGuiCol.ButtonHovered, colV4);
                     ImGui.PushStyleColor(ImGuiCol.ButtonActive, colV4);
