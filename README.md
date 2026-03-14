@@ -14,6 +14,15 @@ Install via Dalamud’s custom repo using the `repo.json` feed:
 3. Open the **Plugin Installer** (e.g. from the launcher or in-game `/xlplugins`).
 4. Find **Saddlebag Exchange** in the list and click **Install**.
 
+Slash command to open window:
+
+```
+/sbex
+/saddlebagexchange
+```
+
+## Notes, logs, how to fix errors, etc...
+
 Updates are delivered through the same repo; the installer will use the latest release from the [releases page](https://github.com/ff14-advanced-market-search/SaddlebagExchangeMarketboardPlugin/releases).
 
 **If install fails:** Restart the game and try again. If it still fails, check the Dalamud log (XIVLauncher → Settings → open the log/data folder, or `%AppData%\XIVLauncher\log`) for the exact error (e.g. download failure, invalid zip, or missing manifest). The release zip should contain a single folder `SaddlebagExchange` with `SaddlebagExchange.dll`, `manifest.json`, and `icon.png` inside it.
@@ -132,23 +141,8 @@ No need to copy the DLL by hand; the post-build copy handles it.
 3. Add the dev plugins folder: `%AppData%\XIVLauncher\devPlugins`
 4. Enable **Saddlebag Exchange**.
 
-## Test
-
-In-game chat:
-
-```
-/saddlebag
-/sbex
-/saddlebagexchange
-```
-
-You should see a window: **Saddlebag Exchange** with “Market tools coming soon.”
-
 ---
 
 ## Roadmap
 
-- Universalis API integration  
-- Item search  
-- Cross-world price comparison  
-- Flip scanner (buy world / price vs sell world / profit)
+- Getting all the tools in there... wip...
