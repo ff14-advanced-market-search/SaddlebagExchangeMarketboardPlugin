@@ -41,6 +41,7 @@
       <_ManifestLine Include="  &quot;LoadRequiredState&quot;: $(LoadRequiredState),"/>
       <_ManifestLine Include="  &quot;RepoUrl&quot;: &quot;$(RepoUrl)&quot;,"/>
       <_ManifestLine Include="  &quot;Tags&quot;: [$(_TagsJson)],"/>
+      <_ManifestLine Include="  &quot;CategoryTags&quot;: [&quot;Utility&quot;, &quot;UI&quot;],"/>
       <_ManifestLine Include="  &quot;Changelog&quot;: &quot;$(Changelog)&quot;"/>
       <_ManifestLine Include="}"/>
     </ItemGroup>
