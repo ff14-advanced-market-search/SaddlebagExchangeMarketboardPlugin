@@ -345,6 +345,7 @@ namespace SaddlebagExchange.UI
                     if (entry.IsHeader)
                     {
                         ImGui.Spacing();
+                        ImGui.Text("---");
                         ImGui.Text(entry.Label);
                         continue;
                     }

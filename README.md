@@ -34,19 +34,48 @@ ffxiv-plugin/
 
 ## Build
 
-From the repo root:
+From the repo root (`ffxiv-plugin`):
 
 ```bash
 cd SaddlebagExchange
 dotnet build
 ```
 
+If `dotnet` is not on your PATH (e.g. in some terminals or CI), use the full path:
+
+```bash
+"C:\Program Files\dotnet\dotnet.exe" build "SaddlebagExchange\SaddlebagExchange.csproj"
+```
+
+(Run from the `ffxiv-plugin` folder, or use the full path to the `.csproj`.)
+
 Output:
 
 - `SaddlebagExchange/bin/Debug/net10.0/SaddlebagExchange.dll`
-- (Manifest is already in `SaddlebagExchange/manifest.json`.)
+- On **Debug** build, the project’s post-build step **copies** the DLL (and `manifest.json`, `icon.png`) into:
+  - `%AppData%\XIVLauncher\devPlugins\SaddlebagExchange`
 
-## Install as dev plugin
+So you don’t need to copy files manually for dev; just build and reload the plugin in-game.
+
+## Rebuild after code changes
+
+1. **Build** (from `ffxiv-plugin`):
+   ```bash
+   cd SaddlebagExchange
+   dotnet build
+   ```
+   Or with full path to dotnet:
+   ```bash
+   "C:\Program Files\dotnet\dotnet.exe" build "c:\Users\cohen\AppData\Roaming\XIVLauncher\devPlugins\ffxiv-plugin\SaddlebagExchange\SaddlebagExchange.csproj"
+   ```
+
+2. **Reload the plugin in-game** so the new DLL is loaded:
+   - `/xlplugins` → disable **Saddlebag Exchange**, then enable it again, or  
+   - Restart the game.
+
+No need to copy the DLL by hand; the post-build copy handles it.
+
+## Install as dev plugin (first-time setup)
 
 1. Create the dev plugin folder (if it doesn’t exist):
    ```
@@ -54,9 +83,10 @@ Output:
    ```
    Example: `C:\Users\<You>\AppData\Roaming\XIVLauncher\devPlugins\SaddlebagExchange`
 
-2. Copy into that folder:
+2. Either build once (post-build will copy files) or copy manually:
    - `SaddlebagExchange/bin/Debug/net10.0/SaddlebagExchange.dll`
    - `SaddlebagExchange/manifest.json`
+   - `SaddlebagExchange/Assets/icon.png` (optional)
 
 ## Load in game
 
