@@ -1,3 +1,6 @@
+using System;
+using System.IO;
+using System.Reflection;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Plugin;
 
@@ -10,16 +13,59 @@ namespace SaddlebagExchange.UI
         private readonly ResellingSearchTab _resellingSearch = new();
         private readonly MarketshareTab _marketshareTab = new();
         private readonly IDalamudPluginInterface? _pluginInterface;
+        private string _defaultHomeServer = string.Empty;
 
         public MainWindow(IDalamudPluginInterface? pluginInterface = null)
         {
             _pluginInterface = pluginInterface;
+            LoadDefaultHomeServer();
         }
+
+        public string GetDefaultHomeServer() => _defaultHomeServer;
 
         public void SetDefaultHomeServer(string? homeServer)
         {
-            _resellingSearch.SetDefaultHomeServer(homeServer);
-            _marketshareTab.SetDefaultHomeServer(homeServer);
+            _defaultHomeServer = (homeServer ?? string.Empty).Trim();
+            SaveDefaultHomeServer();
+            _resellingSearch.SetDefaultHomeServer(string.IsNullOrEmpty(_defaultHomeServer) ? null : _defaultHomeServer);
+            _marketshareTab.SetDefaultHomeServer(string.IsNullOrEmpty(_defaultHomeServer) ? null : _defaultHomeServer);
+        }
+
+        private static string GetConfigFilePath()
+        {
+            var dir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            return Path.Combine(dir ?? ".", "default_home_server.txt");
+        }
+
+        private void LoadDefaultHomeServer()
+        {
+            try
+            {
+                var path = GetConfigFilePath();
+                if (!File.Exists(path)) return;
+                var s = File.ReadAllText(path).Trim();
+                if (string.IsNullOrEmpty(s)) return;
+                _defaultHomeServer = s;
+                _resellingSearch.SetDefaultHomeServer(_defaultHomeServer);
+                _marketshareTab.SetDefaultHomeServer(_defaultHomeServer);
+            }
+            catch { /* ignore */ }
+        }
+
+        private void SaveDefaultHomeServer()
+        {
+            try
+            {
+                var path = GetConfigFilePath();
+                if (string.IsNullOrEmpty(_defaultHomeServer))
+                {
+                    if (File.Exists(path))
+                        File.Delete(path);
+                    return;
+                }
+                File.WriteAllText(path, _defaultHomeServer);
+            }
+            catch { /* ignore */ }
         }
 
         public void Draw()
@@ -39,7 +85,7 @@ namespace SaddlebagExchange.UI
             switch (_selectedToolIndex)
             {
                 case 0:
-                    _homeTab.Draw(_pluginInterface);
+                    _homeTab.Draw(_pluginInterface, GetDefaultHomeServer, SetDefaultHomeServer);
                     break;
                 case 1:
                     _resellingSearch.Draw();

@@ -135,9 +135,9 @@ namespace SaddlebagExchange.UI
 
         public void SetDefaultHomeServer(string? homeServer)
         {
-            if (string.IsNullOrEmpty(homeServer)) return;
-            _params.HomeServer = homeServer;
-            _homeServerBuffer = homeServer;
+            var s = homeServer ?? string.Empty;
+            _params.HomeServer = s;
+            _homeServerBuffer = s;
         }
 
         public void Draw()

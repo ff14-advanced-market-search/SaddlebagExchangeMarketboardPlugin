@@ -9,6 +9,7 @@ namespace SaddlebagExchange.UI
 {
     public sealed class HomeTab
     {
+        private const float ServerComboWidth = 200f * 1.2f; // match Reselling Search / Market Overview
         private const string GuidesUrl = "https://github.com/ff14-advanced-market-search/saddlebag-with-pockets/wiki";
         private const string PatreonUrl = "https://www.patreon.com/indopan";
         private const string DiscordUrl = "https://discord.gg/9dHx2rEq9F";
@@ -16,8 +17,9 @@ namespace SaddlebagExchange.UI
 
         private object? _iconTexture;
         private bool _iconLoadAttempted;
+        private string _defaultDc = string.Empty;
 
-        public void Draw(IDalamudPluginInterface? pluginInterface)
+        public void Draw(IDalamudPluginInterface? pluginInterface, Func<string>? getDefaultHomeServer = null, Action<string>? setDefaultHomeServer = null)
         {
             ImGui.Spacing();
 
@@ -61,6 +63,69 @@ namespace SaddlebagExchange.UI
                 OpenUrl(WebsiteUrl);
 
             ImGui.Spacing();
+            ImGui.Separator();
+            ImGui.Spacing();
+
+            if (getDefaultHomeServer != null && setDefaultHomeServer != null)
+                DrawDefaultHomeServerSection(getDefaultHomeServer, setDefaultHomeServer);
+
+            ImGui.Spacing();
+        }
+
+        private void DrawDefaultHomeServerSection(Func<string> getDefaultHomeServer, Action<string> setDefaultHomeServer)
+        {
+            ImGui.Text("Default home server");
+            ImGui.SameLine();
+            ImGui.TextDisabled("(?)");
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+                ImGui.SetTooltip("This world is used as the home server for Reselling Search and Market Overview. It will be pre-filled on every search.");
+            ImGui.Spacing();
+
+            string currentWorld = getDefaultHomeServer();
+            if (!string.IsNullOrEmpty(currentWorld))
+            {
+                var dc = WorldList.GetDataCenterForWorld(currentWorld);
+                if (!string.IsNullOrEmpty(dc))
+                    _defaultDc = dc;
+            }
+
+            string dcPreview = string.IsNullOrEmpty(_defaultDc) ? "Select data center..." : _defaultDc;
+            ImGui.SetNextItemWidth(ServerComboWidth);
+            if (ImGui.BeginCombo("Data Center", dcPreview))
+            {
+                foreach (string dc in WorldList.GetDataCenters())
+                {
+                    bool selected = _defaultDc == dc;
+                    if (ImGui.Selectable(dc, selected))
+                    {
+                        _defaultDc = dc;
+                        var dcWorlds = WorldList.GetWorlds(dc);
+                        if (dcWorlds.Length > 0 && Array.IndexOf(dcWorlds, currentWorld) < 0)
+                            setDefaultHomeServer(string.Empty);
+                    }
+                    if (selected)
+                        ImGui.SetItemDefaultFocus();
+                }
+                ImGui.EndCombo();
+            }
+
+            ImGui.SameLine();
+
+            string[] worlds = string.IsNullOrEmpty(_defaultDc) ? Array.Empty<string>() : WorldList.GetWorlds(_defaultDc);
+            string worldPreview = string.IsNullOrEmpty(currentWorld) ? "Select world..." : currentWorld;
+            ImGui.SetNextItemWidth(ServerComboWidth);
+            if (ImGui.BeginCombo("World", worldPreview))
+            {
+                foreach (string world in worlds)
+                {
+                    bool selected = currentWorld == world;
+                    if (ImGui.Selectable(world, selected))
+                        setDefaultHomeServer(world);
+                    if (selected)
+                        ImGui.SetItemDefaultFocus();
+                }
+                ImGui.EndCombo();
+            }
         }
 
         private void TryLoadIcon(IDalamudPluginInterface? pluginInterface)

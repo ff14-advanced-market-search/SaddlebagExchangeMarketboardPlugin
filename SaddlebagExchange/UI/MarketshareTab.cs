@@ -123,11 +123,14 @@ namespace SaddlebagExchange.UI
 
         public void SetDefaultHomeServer(string? server)
         {
-            if (string.IsNullOrEmpty(server)) return;
-            _params.Server = server;
-            var dc = WorldList.GetDataCenterForWorld(server);
-            if (!string.IsNullOrEmpty(dc))
-                _selectedDataCenter = dc;
+            var s = server ?? string.Empty;
+            _params.Server = s;
+            if (!string.IsNullOrEmpty(s))
+            {
+                var dc = WorldList.GetDataCenterForWorld(s);
+                if (!string.IsNullOrEmpty(dc))
+                    _selectedDataCenter = dc;
+            }
         }
 
         public void Draw()
