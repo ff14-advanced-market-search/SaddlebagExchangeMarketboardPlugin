@@ -634,7 +634,7 @@ namespace SaddlebagExchange.UI
             if (string.Equals(s, "out of stock", StringComparison.OrdinalIgnoreCase)) return new System.Numerics.Vector4(0.13f, 0.59f, 0.95f, 1f);   // blue
             if (string.Equals(s, "stable", StringComparison.OrdinalIgnoreCase)) return new System.Numerics.Vector4(1f, 0.92f, 0.23f, 1f);       // yellow
             if (string.Equals(s, "increasing", StringComparison.OrdinalIgnoreCase)) return new System.Numerics.Vector4(0.55f, 0.76f, 0.29f, 1f);   // light green
-            if (string.Equals(s, "spiking", StringComparison.OrdinalIgnoreCase)) return new System.Numerics.Vector4(0.30f, 0.69f, 0.31f, 1f);     // full green
+            if (string.Equals(s, "spiking", StringComparison.OrdinalIgnoreCase)) return new System.Numerics.Vector4(0.16f, 0.52f, 0.20f, 1f);     // dark green (spiking)
             // Red family: high R, low B (never high B — that reads purple on ImGui tinting)
             if (string.Equals(s, "decreasing", StringComparison.OrdinalIgnoreCase)) return new System.Numerics.Vector4(1f, 0.45f, 0.38f, 1f);    // light red / coral-red
             if (string.Equals(s, "crashing", StringComparison.OrdinalIgnoreCase)) return new System.Numerics.Vector4(0.86f, 0.18f, 0.14f, 1f);    // dark red
