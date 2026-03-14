@@ -63,7 +63,7 @@
     <ItemGroup>
       <_CopyFiles Include="$(OutputPath)SaddlebagExchange.dll" />
       <_CopyFiles Include="$(OutputPath)icon.png" />
-      <_CopyFiles Include="$(OutputPath)manifest.json" Condition=" Exists('$(OutputPath)manifest.json') " />
+      <_CopyFiles Include="$(OutputPath)manifest.json" />
     </ItemGroup>
     <!-- Copy to bin\Debug so adding "...\SaddlebagExchange\bin\Debug\SaddlebagExchange.dll" as dev path works -->
     <MakeDir Directories="$(_BinDebugDir)" Condition=" !Exists('$(_BinDebugDir)') " />

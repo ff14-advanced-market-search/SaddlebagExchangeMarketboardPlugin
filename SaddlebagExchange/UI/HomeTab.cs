@@ -79,11 +79,12 @@ namespace SaddlebagExchange.UI
                 if (child.Success)
                 {
                     var resellingMin = ImGui.GetCursorScreenPos();
-                    if (ImGui.InvisibleButton("##btn_reselling", new System.Numerics.Vector2(cardWidth, cardHeight)))
+                    var resellingHitSize = ImGui.GetContentRegionAvail();
+                    if (ImGui.InvisibleButton("##btn_reselling", resellingHitSize))
                         onSelectTool(1);
                     if (ImGui.IsItemHovered())
                         ImGui.SetTooltip("Click to open Reselling Search");
-                    ImGui.SetCursorScreenPos(new System.Numerics.Vector2(resellingMin.X + ImGui.GetStyle().WindowPadding.X, resellingMin.Y + ImGui.GetStyle().WindowPadding.Y));
+                    ImGui.SetCursorScreenPos(resellingMin);
                     ImGui.PushStyleColor(ImGuiCol.Text, new System.Numerics.Vector4(0.45f, 0.28f, 0.65f, 1f));
                     ImGui.Text("Reselling Trade Searches");
                     ImGui.PopStyleColor();
@@ -102,11 +103,12 @@ namespace SaddlebagExchange.UI
                 if (child.Success)
                 {
                     var msMin = ImGui.GetCursorScreenPos();
-                    if (ImGui.InvisibleButton("##btn_marketshare", new System.Numerics.Vector2(cardWidth, cardHeight)))
+                    var msHitSize = ImGui.GetContentRegionAvail();
+                    if (ImGui.InvisibleButton("##btn_marketshare", msHitSize))
                         onSelectTool(2);
                     if (ImGui.IsItemHovered())
                         ImGui.SetTooltip("Click to open Market Overview");
-                    ImGui.SetCursorScreenPos(new System.Numerics.Vector2(msMin.X + ImGui.GetStyle().WindowPadding.X, msMin.Y + ImGui.GetStyle().WindowPadding.Y));
+                    ImGui.SetCursorScreenPos(msMin);
                     ImGui.PushStyleColor(ImGuiCol.Text, new System.Numerics.Vector4(0.45f, 0.28f, 0.65f, 1f));
                     ImGui.Text("Marketshare Overview");
                     ImGui.PopStyleColor();
