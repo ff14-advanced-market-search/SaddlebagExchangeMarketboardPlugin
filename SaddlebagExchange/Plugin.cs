@@ -23,8 +23,7 @@ namespace SaddlebagExchange
         {
             _pi = pluginInterface;
             _mainWindow = new MainWindow(pluginInterface);
-            // Only Settings button opens the UI; Open button in /xlplugins intentionally does nothing.
-            _onOpenMainUi = () => { };
+            _onOpenMainUi = () => _windowOpen = true;
             _onOpenConfigUi = () => _windowOpen = true;
 
             var uiBuilder = pluginInterface.UiBuilder;
@@ -46,6 +45,7 @@ namespace SaddlebagExchange
             {
                 _cmd.AddHandler("/saddlebag", new CommandInfo(OnCommand) { HelpMessage = help });
                 _cmd.AddHandler("/saddlebagexchange", new CommandInfo(OnCommand) { HelpMessage = help });
+                _cmd.AddHandler("/sbex", new CommandInfo(OnCommand) { HelpMessage = help });
                 _commandsRegistered = true;
             }
             catch { /* ignore if already registered or failed */ }
@@ -89,6 +89,7 @@ namespace SaddlebagExchange
             uiBuilder.OpenConfigUi -= _onOpenConfigUi;
             _cmd?.RemoveHandler("/saddlebag");
             _cmd?.RemoveHandler("/saddlebagexchange");
+            _cmd?.RemoveHandler("/sbex");
             _cmd = null;
             _pi = null;
         }
