@@ -96,5 +96,45 @@ namespace SaddlebagExchange.UI
                 ("Materia", "Zurvan")
             };
         }
+
+        private static (string DataCenter, string World)[]? _all;
+        public static (string DataCenter, string World)[] All => _all ??= GetAll();
+
+        /// <summary>Unique data center names in display order.</summary>
+        public static string[] GetDataCenters()
+        {
+            var seen = new HashSet<string>();
+            var list = new List<string>();
+            foreach (var (dc, _) in All)
+            {
+                if (seen.Add(dc))
+                    list.Add(dc);
+            }
+            return list.ToArray();
+        }
+
+        /// <summary>World names for the given data center.</summary>
+        public static string[] GetWorlds(string dataCenter)
+        {
+            var list = new List<string>();
+            foreach (var (dc, world) in All)
+            {
+                if (dc == dataCenter)
+                    list.Add(world);
+            }
+            return list.ToArray();
+        }
+
+        /// <summary>Data center that contains the given world, or null if not found.</summary>
+        public static string? GetDataCenterForWorld(string world)
+        {
+            if (string.IsNullOrEmpty(world)) return null;
+            foreach (var (dc, w) in All)
+            {
+                if (string.Equals(w, world, StringComparison.OrdinalIgnoreCase))
+                    return dc;
+            }
+            return null;
+        }
     }
 }

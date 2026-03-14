@@ -28,6 +28,7 @@ namespace SaddlebagExchange.UI
         private bool _resultsWindowOpen;
         private bool _showColumnsPopup;
         private bool _showFiltersPopup;
+        private string _selectedDataCenter = string.Empty;
         private const int SearchBufferSize = 128;
         private readonly byte[] _searchBuffer = new byte[SearchBufferSize];
         private int _tableIdCounter;
@@ -365,23 +366,51 @@ namespace SaddlebagExchange.UI
 
         private void DrawHomeServerCombo()
         {
-            string current = _params.HomeServer;
-            if (string.IsNullOrEmpty(current))
-                current = "Select world...";
-            ImGui.SetNextItemWidth(SearchInputWidth * 1.2f);
-            if (ImGui.BeginCombo("Home server", current))
+            // Sync selected data center from current home server (e.g. after preset or SetDefaultHomeServer)
+            if (!string.IsNullOrEmpty(_params.HomeServer))
             {
-                string? lastDc = null;
-                foreach (var (dataCenter, world) in WorldList.GetAll())
+                var dc = WorldList.GetDataCenterForWorld(_params.HomeServer);
+                if (!string.IsNullOrEmpty(dc))
+                    _selectedDataCenter = dc;
+            }
+
+            // 1) Data Center
+            string dcPreview = string.IsNullOrEmpty(_selectedDataCenter) ? "Select data center..." : _selectedDataCenter;
+            ImGui.SetNextItemWidth(SearchInputWidth * 1.2f);
+            if (ImGui.BeginCombo("Data Center", dcPreview))
+            {
+                foreach (string dc in WorldList.GetDataCenters())
                 {
-                    if (lastDc != dataCenter)
+                    bool selected = _selectedDataCenter == dc;
+                    if (ImGui.Selectable(dc, selected))
                     {
-                        if (lastDc != null)
-                            ImGui.Separator();
-                        ImGui.TextUnformatted(dataCenter);
-                        ImGui.Separator();
-                        lastDc = dataCenter;
+                        _selectedDataCenter = dc;
+                        // If current world isn't in this DC, clear it
+                        var dcWorlds = WorldList.GetWorlds(dc);
+                        if (dcWorlds.Length > 0 && Array.IndexOf(dcWorlds, _params.HomeServer) < 0)
+                        {
+                            _params.HomeServer = string.Empty;
+                            _homeServerBuffer = string.Empty;
+                        }
                     }
+                    if (selected)
+                        ImGui.SetItemDefaultFocus();
+                }
+                ImGui.EndCombo();
+            }
+
+            ImGui.SameLine();
+
+            // 2) World (only when a data center is selected)
+            string[] worlds = string.IsNullOrEmpty(_selectedDataCenter) ? Array.Empty<string>() : WorldList.GetWorlds(_selectedDataCenter);
+            string worldPreview = _params.HomeServer;
+            if (string.IsNullOrEmpty(worldPreview))
+                worldPreview = "Select world...";
+            ImGui.SetNextItemWidth(SearchInputWidth * 1.2f);
+            if (ImGui.BeginCombo("World", worldPreview))
+            {
+                foreach (string world in worlds)
+                {
                     bool selected = _params.HomeServer == world;
                     if (ImGui.Selectable(world, selected))
                     {
