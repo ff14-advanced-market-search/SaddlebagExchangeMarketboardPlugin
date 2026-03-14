@@ -16,6 +16,8 @@ Install via Dalamud’s custom repo using the `repo.json` feed:
 
 Updates are delivered through the same repo; the installer will use the latest release from the [releases page](https://github.com/ff14-advanced-market-search/SaddlebagExchangeMarketboardPlugin/releases).
 
+**If install fails:** Restart the game and try again. If it still fails, check the Dalamud log (XIVLauncher → Settings → open the log/data folder, or `%AppData%\XIVLauncher\log`) for the exact error (e.g. download failure, invalid zip, or missing manifest). The release zip should contain a single folder `SaddlebagExchange` with `SaddlebagExchange.dll`, `manifest.json`, and `icon.png` inside it.
+
 ## Creating a release
 
 1. **Commit and push** all changes (workflow, repo.json, manifest, code).

@@ -39,14 +39,16 @@ jobs:
 
       - name: Create plugin zip
         run: |
-          VER="${{ steps.version.outputs.VERSION }}"
-          OUT="SaddlebagExchange/$VER"
+          # One folder named after the plugin (InternalName), files directly inside (no version subfolder).
+          # The installer expects manifest.json + DLL in that folder.
+          OUT="SaddlebagExchange"
           BIN="SaddlebagExchange/bin/Release"
           mkdir -p "$OUT"
           cp "$BIN/SaddlebagExchange.dll" "$OUT/"
           cp "$BIN/icon.png" "$OUT/"
           cp SaddlebagExchange/manifest.json "$OUT/"
           zip -r SaddlebagExchange.zip SaddlebagExchange
+          unzip -l SaddlebagExchange.zip
 
       - name: Create Release and upload zip
         uses: softprops/action-gh-release@v2
