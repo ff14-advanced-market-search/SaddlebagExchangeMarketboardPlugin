@@ -94,27 +94,27 @@ namespace SaddlebagExchange.UI
             ShowOutStock = true
         };
 
-        // Presets match frontend recommendedQueries (exact titles and params)
-        private static readonly (string Label, ResellingParams Params)[] Presets =
+        // Presets match frontend recommendedQueries (exact titles, descriptions, and params)
+        private static readonly (string Label, string Description, ResellingParams Params)[] Presets =
         {
-            ("Olivias Furnishing Items Medium Sell", P(168, 2, 25, 1, 75000, 30000, new[] { 56, 65, 66, 67, 68, 69, 70, 71, 72, 81, 82 }, false, true, true, true)),
-            ("Olivias Consumable Collectables Medium Sell", P(168, 2, 25, 1, 75000, 30000, new[] { 75, 80, 90 }, false, true, true, true)),
-            ("Fast Sales Search", P(168, 20, 25, 1, 500, 500, new[] { 0 }, false, false, false, true)),
-            ("NPC Vendor Furniture Item Search", P(168, 2, 50, 1, 5000, 3000, new[] { -4 }, false, true, true, false)),
-            ("Commodities Search", P(168, 2, 25, 2, 1000, 1000, new[] { 0 }, false, false, false, true)),
-            ("Mega Value Search", P(336, 1, 25, 1, 1000000, 1000000, new[] { 0 }, false, true, true, true)),
-            ("NPC Vendor Item Search", P(48, 5, 50, 1, 1000, 1000, new[] { -1 }, false, true, true, true)),
-            ("Beginner Out of Stock Search", P(168, 2, 99, 1, 100, 100, new[] { 1, 2, 3, 4, 7 }, true, false, true, true)),
-            ("Low Quality Out of Stock Search", P(168, 2, 99, 1, 100, 100, new[] { 7, 54 }, false, true, true, true)),
-            ("Olivias General Flipping Quick Sell", P(48, 5, 25, 1, 5000, 5000, new[] { 0 }, false, true, true, true)),
-            ("Olivias Class Quest Items Quick Sell", P(48, 2, 25, 1, 5000, 5000, new[] { -2, -3 }, false, true, true, true)),
-            ("Olivias Furnishing Items Quick Sell", P(48, 5, 25, 1, 5000, 5000, new[] { 56, 65, 66, 67, 68, 69, 70, 71, 72, 81, 82 }, false, true, true, true)),
-            ("Olivias Minions, Mounts, and Collectable Items Quick Sell", P(48, 5, 25, 1, 5000, 5000, new[] { 75, 80, 90 }, false, true, true, true)),
-            ("Olivias Glamor Medium Sell", P(168, 2, 25, 1, 75000, 30000, new[] { 1, 2, -5 }, false, true, true, true)),
-            ("Olivias High Investment Furniture Items", P(336, 1, 25, 1, 300000, 300000, new[] { 56, 65, 66, 67, 68, 69, 70, 71, 72, 81, 82 }, false, true, true, true)),
-            ("Olivias High Investment Collectable Items", P(336, 1, 25, 1, 300000, 300000, new[] { 75, 80, 90 }, false, true, true, true)),
-            ("Olivias High Value Glamor Items", P(336, 1, 25, 1, 300000, 300000, new[] { 1, 2, -5 }, false, true, true, true)),
-            ("Olivias High Value Materials", P(336, 1, 25, 1, 300000, 300000, new[] { 6 }, false, true, true, true))
+            ("Olivias Furnishing Items Medium Sell", "Finds medium priced furniture to sell.", P(168, 2, 25, 1, 75000, 30000, new[] { 56, 65, 66, 67, 68, 69, 70, 71, 72, 81, 82 }, false, true, true, true)),
+            ("Olivias Consumable Collectables Medium Sell", "Medium priced Consumable Collectables to sell.", P(168, 2, 25, 1, 75000, 30000, new[] { 75, 80, 90 }, false, true, true, true)),
+            ("Fast Sales Search", "Search for items with high rate of sales.\nMay not return results if your server has slow sales.", P(168, 20, 25, 1, 500, 500, new[] { 0 }, false, false, false, true)),
+            ("NPC Vendor Furniture Item Search", "Search for items sold by Housing Vendors which can be resold on the marketboard.", P(168, 2, 50, 1, 5000, 3000, new[] { -4 }, false, true, true, false)),
+            ("Commodities Search", "Search for items that sell in larger stack sizes (i.e. larger quantities)", P(168, 2, 25, 2, 1000, 1000, new[] { 0 }, false, false, false, true)),
+            ("Mega Value Search", "Searches for the absolute highest value items on the whole marketboard with no regard to sale rates.", P(336, 1, 25, 1, 1000000, 1000000, new[] { 0 }, false, true, true, true)),
+            ("NPC Vendor Item Search", "Search for items sold by NPC Vendors which can be resold on the marketboard.", P(48, 5, 50, 1, 1000, 1000, new[] { -1 }, false, true, true, true)),
+            ("Beginner Out of Stock Search", "Recommended for Beginners. No level requirement, high profit margins, low risk, low cost, low effort, low competition, but slow sale rates.\nIgnore Average Value, everything this finds can be sold for 70k if there are no other listings on your server.", P(168, 2, 99, 1, 100, 100, new[] { 1, 2, 3, 4, 7 }, true, false, true, true)),
+            ("Low Quality Out of Stock Search", "Same rules as the out of stock search, but this one looks for Low Quality items that can sell for like furniture or dyes that can sell for much higher prices than out of stock armor or weapons.", P(168, 2, 99, 1, 100, 100, new[] { 7, 54 }, false, true, true, true)),
+            ("Olivias General Flipping Quick Sell", "Low Investment General Flipping Quick Sell.", P(48, 5, 25, 1, 5000, 5000, new[] { 0 }, false, true, true, true)),
+            ("Olivias Class Quest Items Quick Sell", "Low Investment Class Quest Items Quick Sell.", P(48, 2, 25, 1, 5000, 5000, new[] { -2, -3 }, false, true, true, true)),
+            ("Olivias Furnishing Items Quick Sell", "Low Investment Furnishing Items Quick Sell.", P(48, 5, 25, 1, 5000, 5000, new[] { 56, 65, 66, 67, 68, 69, 70, 71, 72, 81, 82 }, false, true, true, true)),
+            ("Olivias Minions, Mounts, and Collectable Items Quick Sell", "Low Investment Minions, Mounts, and Collectable Items Quick Sell.", P(48, 5, 25, 1, 5000, 5000, new[] { 75, 80, 90 }, false, true, true, true)),
+            ("Olivias Glamor Medium Sell", "Medium priced glamor items, it will also find class/profession gear ignore these and go for stuff that looks nice.", P(168, 2, 25, 1, 75000, 30000, new[] { 1, 2, -5 }, false, true, true, true)),
+            ("Olivias High Investment Furniture Items", "Furnishing items with big profits but slow sales", P(336, 1, 25, 1, 300000, 300000, new[] { 56, 65, 66, 67, 68, 69, 70, 71, 72, 81, 82 }, false, true, true, true)),
+            ("Olivias High Investment Collectable Items", "Collectable items with big profits but slow sales", P(336, 1, 25, 1, 300000, 300000, new[] { 75, 80, 90 }, false, true, true, true)),
+            ("Olivias High Value Glamor Items", "Finds expensive glamor items, it will also find class/profession gear ignore these and go for stuff that looks nice.", P(336, 1, 25, 1, 300000, 300000, new[] { 1, 2, -5 }, false, true, true, true)),
+            ("Olivias High Value Materials", "Finds expensive Materials and Trade goods.", P(336, 1, 25, 1, 300000, 300000, new[] { 6 }, false, true, true, true))
         };
 
         static ResellingParams P(int hours, int minSales, int roi, int minStack, int minProfit, int ppu, int[] filters, bool hq, bool includeVendor, bool showOutStock, bool regionWide) => new()
@@ -158,6 +158,8 @@ namespace SaddlebagExchange.UI
                 if (i > 0 && i % presetsPerLine != 0) ImGui.SameLine();
                 if (ImGui.Button(Presets[i].Label))
                     ApplyPreset(Presets[i].Params);
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip(Presets[i].Description);
             }
             ImGui.Spacing();
 
