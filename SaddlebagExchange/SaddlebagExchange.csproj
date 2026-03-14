@@ -10,7 +10,7 @@
     <Punchline>Marketboard analytics for FFXIV</Punchline>
     <Description>Advanced marketboard tools and cross-world arbitrage scanning.</Description>
     <InternalName>SaddlebagExchange</InternalName>
-    <AssemblyVersion>1.0.6</AssemblyVersion>
+    <AssemblyVersion>1.0.7</AssemblyVersion>
     <!-- API level from SDK/packager version (e.g. 14.0.2 -> 14). Do not hardcode. -->
     <DalamudApiLevel Condition="'$(DalamudApiLevel)' == ''">$([System.Version]::Parse('$(PackageVersion_DalamudPackager)').Major)</DalamudApiLevel>
     <LoadRequiredState>0</LoadRequiredState>

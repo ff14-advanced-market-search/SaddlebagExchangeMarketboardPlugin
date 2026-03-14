@@ -35,6 +35,10 @@ Updates are delivered through the same repo; the installer will use the latest r
 
 1. **Commit and push** all changes (workflow, repo.json, project, code).
 2. **Set version** in `SaddlebagExchange/SaddlebagExchange.csproj` → `AssemblyVersion` (e.g. `1.0.0`). Optionally update `repo.json` → `AssemblyVersion` and `LastUpdated` (Unix timestamp) so the plugin list shows the right version. API level is derived from the SDK in the project; when you upgrade the Dalamud SDK (e.g. to 15.x), update `repo.json` → `DalamudApiLevel` to match the SDK major version.
+
+   **When bumping version, update:**
+   - `SaddlebagExchange/SaddlebagExchange.csproj` → `<AssemblyVersion>X.Y.Z</AssemblyVersion>` (source of truth; manifest is generated from this).
+   - `repo.json` → `"AssemblyVersion": "X.Y.Z"` (and optionally `"LastUpdated": <Unix timestamp>` so the plugin list shows the new version).
 3. **Create and push the tag** (use the same version number):
    ```bash
    git tag v1.0.0
@@ -51,6 +55,17 @@ git push origin v1.0.0
 ```
 
 (Replace `main` with your default branch if different.)
+
+**Commands to run for a version bump release** (from repo root; replace `1.0.7` and `main` as needed):
+
+```bash
+git add -A
+git status
+git commit -m "Release 1.0.7"
+git push origin main
+git tag v1.0.7
+git push origin v1.0.7
+```
 
 ## Prerequisites
 
