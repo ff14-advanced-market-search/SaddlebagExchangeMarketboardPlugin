@@ -85,7 +85,7 @@ namespace SaddlebagExchange.UI
             switch (_selectedToolIndex)
             {
                 case 0:
-                    _homeTab.Draw(_pluginInterface, GetDefaultHomeServer, SetDefaultHomeServer);
+                    _homeTab.Draw(_pluginInterface, GetDefaultHomeServer, SetDefaultHomeServer, (tabIndex) => _selectedToolIndex = tabIndex);
                     break;
                 case 1:
                     _resellingSearch.Draw();

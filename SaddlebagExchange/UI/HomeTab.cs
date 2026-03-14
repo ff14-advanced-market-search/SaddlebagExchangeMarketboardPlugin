@@ -19,7 +19,7 @@ namespace SaddlebagExchange.UI
         private bool _iconLoadAttempted;
         private string _defaultDc = string.Empty;
 
-        public void Draw(IDalamudPluginInterface? pluginInterface, Func<string>? getDefaultHomeServer = null, Action<string>? setDefaultHomeServer = null)
+        public void Draw(IDalamudPluginInterface? pluginInterface, Func<string>? getDefaultHomeServer = null, Action<string>? setDefaultHomeServer = null, Action<int>? onSelectTool = null)
         {
             ImGui.Spacing();
 
@@ -70,6 +70,64 @@ namespace SaddlebagExchange.UI
                 DrawDefaultHomeServerSection(getDefaultHomeServer, setDefaultHomeServer);
 
             ImGui.Spacing();
+            ImGui.Separator();
+            ImGui.Spacing();
+
+            if (onSelectTool != null)
+                DrawToolsSection(onSelectTool);
+
+            ImGui.Spacing();
+        }
+
+        private void DrawToolsSection(Action<int> onSelectTool)
+        {
+            ImGui.PushStyleColor(ImGuiCol.Text, new System.Numerics.Vector4(0.5f, 0.3f, 0.7f, 1f));
+            ImGui.Text("TOOLS & FEATURES");
+            ImGui.PopStyleColor();
+            ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 4f);
+            ImGui.Text("Everything You Need for Gil Making.");
+            ImGui.Spacing();
+
+            float avail = ImGui.GetContentRegionAvail().X;
+            float cardWidth = (avail - ImGui.GetStyle().ItemSpacing.X) * 0.5f;
+            float cardHeight = 72f;
+
+            // Reselling Trade Searches
+            ImGui.BeginChild("##tool_reselling", new System.Numerics.Vector2(cardWidth, cardHeight), true, ImGuiWindowFlags.None);
+            var resellingMin = ImGui.GetCursorScreenPos();
+            var resellingMax = new System.Numerics.Vector2(resellingMin.X + cardWidth, resellingMin.Y + cardHeight);
+            if (ImGui.InvisibleButton("##btn_reselling", new System.Numerics.Vector2(cardWidth, cardHeight)))
+                onSelectTool(1);
+            if (ImGui.IsItemHovered())
+                ImGui.SetTooltip("Click to open Reselling Search");
+            ImGui.SetCursorScreenPos(new System.Numerics.Vector2(resellingMin.X + ImGui.GetStyle().WindowPadding.X, resellingMin.Y + ImGui.GetStyle().WindowPadding.Y));
+            ImGui.PushStyleColor(ImGuiCol.Text, new System.Numerics.Vector4(0.45f, 0.28f, 0.65f, 1f));
+            ImGui.Text("Reselling Trade Searches");
+            ImGui.PopStyleColor();
+            ImGui.SetCursorPosX(ImGui.GetStyle().WindowPadding.X);
+            ImGui.PushTextWrapPos(resellingMin.X + cardWidth - ImGui.GetStyle().WindowPadding.X);
+            ImGui.TextWrapped("Find items you can buy on other servers and resell on your own for a profit!");
+            ImGui.PopTextWrapPos();
+            ImGui.EndChild();
+
+            ImGui.SameLine();
+
+            // Marketshare Overview
+            ImGui.BeginChild("##tool_marketshare", new System.Numerics.Vector2(cardWidth, cardHeight), true, ImGuiWindowFlags.None);
+            var msMin = ImGui.GetCursorScreenPos();
+            if (ImGui.InvisibleButton("##btn_marketshare", new System.Numerics.Vector2(cardWidth, cardHeight)))
+                onSelectTool(2);
+            if (ImGui.IsItemHovered())
+                ImGui.SetTooltip("Click to open Market Overview");
+            ImGui.SetCursorScreenPos(new System.Numerics.Vector2(msMin.X + ImGui.GetStyle().WindowPadding.X, msMin.Y + ImGui.GetStyle().WindowPadding.Y));
+            ImGui.PushStyleColor(ImGuiCol.Text, new System.Numerics.Vector4(0.45f, 0.28f, 0.65f, 1f));
+            ImGui.Text("Marketshare Overview");
+            ImGui.PopStyleColor();
+            ImGui.SetCursorPosX(ImGui.GetStyle().WindowPadding.X);
+            ImGui.PushTextWrapPos(msMin.X + cardWidth - ImGui.GetStyle().WindowPadding.X);
+            ImGui.TextWrapped("Finds the best items to sell! Shows the top 200 best selling items on your home server.");
+            ImGui.PopTextWrapPos();
+            ImGui.EndChild();
         }
 
         private void DrawDefaultHomeServerSection(Func<string> getDefaultHomeServer, Action<string> setDefaultHomeServer)
