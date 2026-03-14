@@ -11,7 +11,8 @@
     <Description>Advanced marketboard tools and cross-world arbitrage scanning.</Description>
     <InternalName>SaddlebagExchange</InternalName>
     <AssemblyVersion>1.0.6</AssemblyVersion>
-    <DalamudApiLevel>14</DalamudApiLevel>
+    <!-- API level from SDK/packager version (e.g. 14.0.2 -> 14). Do not hardcode. -->
+    <DalamudApiLevel Condition="'$(DalamudApiLevel)' == ''">$([System.Version]::Parse('$(PackageVersion_DalamudPackager)').Major)</DalamudApiLevel>
     <LoadRequiredState>0</LoadRequiredState>
   </PropertyGroup>
 
@@ -29,6 +30,13 @@
     <Content Include="Assets\icon.png" CopyToOutputDirectory="PreserveNewest" Link="icon.png" />
   </ItemGroup>
 
+  <!-- Emit manifest.json to output with API level from SDK (no hardcoding). -->
+  <Target Name="EmitManifestWithApiLevel" AfterTargets="Build">
+    <Copy SourceFiles="$(MSBuildProjectDirectory)\manifest.json" DestinationFiles="$(OutputPath)manifest.json" />
+    <Exec Command="sed -i 's/__DALAMUD_API_LEVEL__/$(DalamudApiLevel)/g' '$(OutputPath)manifest.json'" Condition="'$(OS)' != 'Windows_NT'" />
+    <Exec Command="powershell -NoProfile -Command \"(Get-Content -Path '$(OutputPath)manifest.json' -Raw) -replace '__DALAMUD_API_LEVEL__', '$(DalamudApiLevel)' | Set-Content -Path '$(OutputPath)manifest.json' -NoNewline\"" Condition="'$(OS)' == 'Windows_NT'" />
+  </Target>
+
   <!-- After build: (1) copy to bin\Debug so "other path" works, (2) copy to XIVLauncher devPlugins -->
   <Target Name="CopyToDevPlugins" AfterTargets="Build" Condition=" '$(Configuration)' == 'Debug' ">
     <PropertyGroup>
@@ -38,7 +46,7 @@
     <ItemGroup>
       <_CopyFiles Include="$(OutputPath)SaddlebagExchange.dll" />
       <_CopyFiles Include="$(OutputPath)icon.png" />
-      <_CopyFiles Include="$(MSBuildProjectDirectory)\manifest.json" Condition=" Exists('$(MSBuildProjectDirectory)\manifest.json') " />
+      <_CopyFiles Include="$(OutputPath)manifest.json" Condition=" Exists('$(OutputPath)manifest.json') " />
     </ItemGroup>
     <!-- Copy to bin\Debug so adding "...\SaddlebagExchange\bin\Debug\SaddlebagExchange.dll" as dev path works -->
     <MakeDir Directories="$(_BinDebugDir)" Condition=" !Exists('$(_BinDebugDir)') " />

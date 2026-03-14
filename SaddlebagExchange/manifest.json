@@ -5,7 +5,7 @@
   "Description": "Advanced marketboard tools and cross-world arbitrage scanning.",
   "InternalName": "SaddlebagExchange",
   "AssemblyVersion": "1.0.6",
-  "DalamudApiLevel": 14,
+  "DalamudApiLevel": "__DALAMUD_API_LEVEL__",
   "LoadRequiredState": 0,
   "RepoUrl": "https://github.com/ff14-advanced-market-search/SaddlebagExchangeMarketboardPlugin",
   "Tags": ["marketboard", "arbitrage", "economy", "gil", "crafting", "money", "trading", "flipping", "materia"],

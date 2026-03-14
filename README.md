@@ -34,7 +34,7 @@ Updates are delivered through the same repo; the installer will use the latest r
 ## Creating a release
 
 1. **Commit and push** all changes (workflow, repo.json, manifest, code).
-2. **Set version** in `SaddlebagExchange/manifest.json` → `AssemblyVersion` (e.g. `"1.0.0"`). Optionally update `repo.json` → `AssemblyVersion` and `LastUpdated` (Unix timestamp) so the plugin list shows the right version.
+2. **Set version** in `SaddlebagExchange/manifest.json` → `AssemblyVersion` (e.g. `"1.0.0"`). Optionally update `repo.json` → `AssemblyVersion` and `LastUpdated` (Unix timestamp) so the plugin list shows the right version. API level is derived from the SDK in the project; when you upgrade the Dalamud SDK (e.g. to 15.x), update `repo.json` → `DalamudApiLevel` to match the SDK major version.
 3. **Create and push the tag** (use the same version number):
    ```bash
    git tag v1.0.0

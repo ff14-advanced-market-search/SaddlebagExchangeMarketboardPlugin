@@ -45,7 +45,7 @@ jobs:
           mkdir -p "$STAGING"
           cp "$BIN/SaddlebagExchange.dll" "$STAGING/"
           cp "$BIN/icon.png" "$STAGING/"
-          cp SaddlebagExchange/manifest.json "$STAGING/"
+          cp "$BIN/manifest.json" "$STAGING/"
           cd "$STAGING" && zip -r ../SaddlebagExchange.zip . && cd ..
           unzip -l SaddlebagExchange.zip
 
