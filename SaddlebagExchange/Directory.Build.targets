@@ -1,0 +1,7 @@
+<Project>
+  <!-- Imported after Sdk.targets so this overrides the SDK's EnsureDalamudLibPathExists.
+       In CI (GITHUB_ACTIONS) we skip the path check so the build can use DALAMUD_HOME from the workflow. -->
+  <Target Name="EnsureDalamudLibPathExists" BeforeTargets="BeforeBuild">
+    <Error Text="Dalamud.NET.Sdk: Dalamud installation not found at $(DalamudLibPath)" Condition="!Exists('$(DalamudLibPath)') and '$(GITHUB_ACTIONS)' != 'true'" />
+  </Target>
+</Project>
