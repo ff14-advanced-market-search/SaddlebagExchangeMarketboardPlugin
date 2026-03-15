@@ -18,9 +18,9 @@
     <Tags>marketboard;economy;gil;crafting;money;trading;flipping</Tags>
   </PropertyGroup>
 
-  <!-- Icon shown in /xlplugins for dev plugins (icon.png next to DLL) -->
+  <!-- Icon shown in /xlplugins for dev plugins (icon.png next to DLL). Same file used for D17 images/icon.png. -->
   <ItemGroup>
-    <Content Include="Assets\icon.png" CopyToOutputDirectory="PreserveNewest" Link="icon.png" />
+    <Content Include="images\icon.png" CopyToOutputDirectory="PreserveNewest" Link="icon.png" />
   </ItemGroup>
 
   <!-- Generate manifest.json from project (single source of truth). Tags JSON array derived from $(Tags). -->

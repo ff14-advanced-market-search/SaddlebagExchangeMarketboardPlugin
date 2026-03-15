@@ -812,12 +812,21 @@ namespace SaddlebagExchange.UI
                 _state = _state with { Error = "Set World first." };
                 return;
             }
+            var paramsCopy = new MarketshareParams
+            {
+                Server = _params.Server,
+                TimePeriod = _params.TimePeriod,
+                SalesAmount = _params.SalesAmount,
+                AveragePrice = _params.AveragePrice,
+                Filters = _params.Filters?.ToArray() ?? Array.Empty<int>(),
+                SortBy = _params.SortBy
+            };
             _state = _state with { Loading = true, Error = string.Empty };
             _ = Task.Run(async () =>
             {
                 try
                 {
-                    var list = await _api.MarketshareAsync(_params, CancellationToken.None).ConfigureAwait(false);
+                    var list = await _api.MarketshareAsync(paramsCopy, CancellationToken.None).ConfigureAwait(false);
                     var results = (list ?? new List<MarketshareResultItem>()).ToImmutableArray();
                     _state = new ScanState<MarketshareResultItem>(false, results, string.Empty);
                     if (results.Length > 0) _requestOpenResultsWindow = true;

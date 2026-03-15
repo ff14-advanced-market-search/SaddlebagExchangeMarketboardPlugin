@@ -9,8 +9,7 @@ namespace SaddlebagExchange
 {
     public sealed class Plugin : IDalamudPlugin
     {
-        public string Name => "Saddlebag Exchange";
-
+        private const string WindowSystemName = "Saddlebag Exchange";
         private readonly WindowSystem _windowSystem;
         private readonly MainWindow _mainWindow;
         private readonly Action _onDraw;
@@ -29,7 +28,7 @@ namespace SaddlebagExchange
             _cmd = commandManager;
             _log = log;
             _config = pluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
-            _windowSystem = new WindowSystem(Name);
+            _windowSystem = new WindowSystem(WindowSystemName);
             _mainWindow = new MainWindow(pluginInterface, _config, () => _pi?.SavePluginConfig(_config));
             _windowSystem.AddWindow(_mainWindow);
 
@@ -59,7 +58,10 @@ namespace SaddlebagExchange
                 _cmd.AddHandler("/saddlebagexchange", new CommandInfo(OnCommand) { HelpMessage = help });
                 _cmd.AddHandler("/sbex", new CommandInfo(OnCommand) { HelpMessage = help });
             }
-            catch { /* ignore if already registered or failed */ }
+            catch (Exception ex)
+            {
+                _log.Warning(ex, "Failed to register one or more command handlers.");
+            }
 
             _log.Information("Saddlebag Exchange loaded.");
         }

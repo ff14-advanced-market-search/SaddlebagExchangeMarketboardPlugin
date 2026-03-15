@@ -466,12 +466,27 @@ namespace SaddlebagExchange.UI
                 _state = _state with { Error = "Set Home server first." };
                 return;
             }
+            var paramsCopy = new ResellingParams
+            {
+                PreferredRoi = _params.PreferredRoi,
+                MinProfitAmount = _params.MinProfitAmount,
+                MinDesiredAvgPpu = _params.MinDesiredAvgPpu,
+                MinStackSize = _params.MinStackSize,
+                HoursAgo = _params.HoursAgo,
+                MinSales = _params.MinSales,
+                Hq = _params.Hq,
+                HomeServer = _params.HomeServer,
+                Filters = _params.Filters?.ToArray() ?? Array.Empty<int>(),
+                RegionWide = _params.RegionWide,
+                IncludeVendor = _params.IncludeVendor,
+                ShowOutStock = _params.ShowOutStock
+            };
             _state = _state with { Loading = true, Error = string.Empty };
             _ = Task.Run(async () =>
             {
                 try
                 {
-                    var list = await _api.ScanAsync(_params).ConfigureAwait(false);
+                    var list = await _api.ScanAsync(paramsCopy).ConfigureAwait(false);
                     var results = (list ?? new List<ResellingResultItem>()).ToImmutableArray();
                     _state = new ScanState<ResellingResultItem>(false, results, string.Empty);
                     if (results.Length > 0) _requestOpenResultsWindow = true;

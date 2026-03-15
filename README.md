@@ -97,9 +97,9 @@ To submit the plugin to the **official Dalamud plugin repo** ([DalamudPluginsD17
      This writes the current `git rev-parse HEAD` into `SaddlebagExchange/manifest.toml`. Leave `commit` empty only while developing; the D17 build will fail without a valid commit.
   2. Update **`changelog`** if you’re submitting a new version.
   3. Keep **`owners`** as the list of GitHub usernames that maintain the plugin (e.g. `["cohenaj194"]`).
-- **What to include in the PR:** Add the **`SaddlebagExchange/`** folder with:
+- **What to include in the PR:** The folder you add must follow the required layout. Add the **`SaddlebagExchange/`** folder with:
   - `manifest.toml` (with **`commit`** set to the full SHA — D17 build fails if empty).
-  - **`images/icon.png`** — required; copy from `Assets/icon.png`, must be square 64×64–512×512 px (recommended 512×512). Optional: `images/image1.png`…`image5.png` for screenshots.
+  - **`images/icon.png`** — required; the icon lives at `SaddlebagExchange/images/icon.png` in this repo (same file used for the plugin in `/xlplugins`). Icon must be square 64×64–512×512 px (recommended 512×512). Optional: `images/image1.png`…`image5.png` for screenshots.
   The D17 layout is `testing/live/SaddlebagExchange/manifest.toml` and `testing/live/SaddlebagExchange/images/icon.png`.
 
 The **repo.json** at the repo root is only for **custom plugin repos** (e.g. the install URL in “Install (for players)”). The D17 build system does **not** use repo.json; it uses **manifest.toml** and builds from the GitHub repo and commit you specify there.
