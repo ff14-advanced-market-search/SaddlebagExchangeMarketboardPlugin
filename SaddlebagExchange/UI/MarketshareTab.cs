@@ -243,7 +243,7 @@ namespace SaddlebagExchange.UI
                 return;
             }
 
-            _resultsWindow?.IsOpen = true;
+            if (_resultsWindow != null) _resultsWindow.IsOpen = true;
         }
 
         /// <summary>Called by <see cref="MarketshareResultsWindow"/> when it draws.</summary>
@@ -423,7 +423,7 @@ namespace SaddlebagExchange.UI
                 _tableIdCounter++;
             ImGui.SameLine();
             if (ImGui.Button("Treemap"))
-                _treemapWindow?.IsOpen = true;
+                if (_treemapWindow != null) _treemapWindow.IsOpen = true;
             if (ImGui.IsItemHovered())
                 ImGui.SetTooltip("Open a heatmap view of the results in a separate window.");
             ImGui.Spacing();
@@ -830,7 +830,7 @@ namespace SaddlebagExchange.UI
                     {
                         _scanResults = list ?? new List<MarketshareResultItem>();
                         _scanInProgress = false;
-                        _resultsWindow?.IsOpen = _scanResults.Count > 0;
+                        if (_resultsWindow != null) _resultsWindow.IsOpen = _scanResults.Count > 0;
                     }
                 }
                 catch (Exception ex)

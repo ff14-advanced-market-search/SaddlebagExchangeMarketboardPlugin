@@ -18,7 +18,7 @@ namespace SaddlebagExchange
         private IDalamudPluginInterface? _pi;
         private ICommandManager _cmd;
         private readonly Configuration _config;
-        private readonly IPluginLog? _log;
+        private readonly IPluginLog _log;
 
         public Plugin(
             IDalamudPluginInterface pluginInterface,
@@ -61,14 +61,7 @@ namespace SaddlebagExchange
             }
             catch { /* ignore if already registered or failed */ }
 
-            _log?.Information("Saddlebag Exchange loaded.");
-            TrySetDefaultHomeServer(pluginInterface);
-        }
-
-        private void TrySetDefaultHomeServer(IDalamudPluginInterface pi)
-        {
-            // Optional: set default home server from current world via pi.GetService(IClientState).
-            // User can enter home server manually in Reselling Search.
+            _log.Information("Saddlebag Exchange loaded.");
         }
 
         private void OnCommand(string command, string args)

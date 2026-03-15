@@ -288,7 +288,7 @@ namespace SaddlebagExchange.UI
                 return;
             }
 
-            _resultsWindow?.IsOpen = true;
+            if (_resultsWindow != null) _resultsWindow.IsOpen = true;
         }
 
         /// <summary>Called by <see cref="ResellingResultsWindow"/> when it draws. Draws the results table or empty state.</summary>
@@ -486,7 +486,7 @@ namespace SaddlebagExchange.UI
                         _scanResults = list ?? new List<ResellingResultItem>();
                         _scanInProgress = false;
                         if (list != null && list.Count > 0)
-                            _resultsWindow?.IsOpen = true;
+                            if (_resultsWindow != null) _resultsWindow.IsOpen = true;
                     }
                 }
                 catch (System.Exception ex)
