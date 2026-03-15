@@ -9,6 +9,7 @@ using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Utility;
+using Microsoft.Extensions.Http;
 using SaddlebagExchange.Models;
 using SaddlebagExchange.Services;
 
@@ -19,7 +20,12 @@ namespace SaddlebagExchange.UI
         private const float InputWidth = 200f;
         private const int SearchBufferSize = 128;
 
-        private readonly SaddlebagApiService _api = new();
+        private readonly SaddlebagApiService _api;
+
+        public MarketshareTab(IHttpClientFactory httpClientFactory)
+        {
+            _api = new SaddlebagApiService(httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory)));
+        }
         private volatile ScanState<MarketshareResultItem> _state = ScanState<MarketshareResultItem>.Idle;
         private MarketshareParams _params = new()
         {

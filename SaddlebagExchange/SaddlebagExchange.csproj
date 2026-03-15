@@ -1,5 +1,10 @@
 <Project Sdk="Dalamud.NET.Sdk/14.0.2">
 
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
+  </ItemGroup>
+
   <PropertyGroup>
     <Nullable>enable</Nullable>
     <AssemblyName>SaddlebagExchange</AssemblyName>

@@ -5,13 +5,14 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Http;
 using SaddlebagExchange.Models;
 
 namespace SaddlebagExchange.Services
 {
     /// <summary>
     /// Client for Saddlebag Exchange API (https://api.saddlebagexchange.com).
-    /// Wiki notes HTTP may be required due to Cloudflare: http://api.saddlebagexchange.com
+    /// Uses IHttpClientFactory for DNS refresh and proper lifetime (reviewer requirement).
     /// </summary>
     public sealed class SaddlebagApiService : IDisposable
     {
@@ -21,21 +22,22 @@ namespace SaddlebagExchange.Services
             NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowReadingFromString
         };
 
-        // Wiki: HTTP may be required (Cloudflare). Try HTTPS first.
-        private readonly HttpClient _http = new()
+        private const string ClientName = "SaddlebagExchange";
+        private readonly IHttpClientFactory _factory;
+
+        public SaddlebagApiService(IHttpClientFactory factory)
         {
-            BaseAddress = new Uri("https://api.saddlebagexchange.com"),
-            DefaultRequestHeaders = { { "Accept", "application/json" } },
-            Timeout = TimeSpan.FromSeconds(30)
-        };
+            _factory = factory ?? throw new ArgumentNullException(nameof(factory));
+        }
 
         /// <summary>
         /// POST /api/scan — Reselling search. Returns items to buy on other servers/vendors and sell on home server.
         /// </summary>
         public async Task<List<ResellingResultItem>> ScanAsync(ResellingParams request, CancellationToken cancel = default)
         {
+            var client = _factory.CreateClient(ClientName);
             using var content = JsonContent.Create(request);
-            using var response = await _http.PostAsync("/api/scan", content, cancel).ConfigureAwait(false);
+            using var response = await client.PostAsync("/api/scan", content, cancel).ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
 
             var json = await response.Content.ReadAsStringAsync(cancel).ConfigureAwait(false);
@@ -48,8 +50,9 @@ namespace SaddlebagExchange.Services
         /// </summary>
         public async Task<List<MarketshareResultItem>> MarketshareAsync(MarketshareParams request, CancellationToken cancel = default)
         {
+            var client = _factory.CreateClient(ClientName);
             using var content = JsonContent.Create(request);
-            using var response = await _http.PostAsync("/api/ffxivmarketshare", content, cancel).ConfigureAwait(false);
+            using var response = await client.PostAsync("/api/ffxivmarketshare", content, cancel).ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
 
             var json = await response.Content.ReadAsStringAsync(cancel).ConfigureAwait(false);
@@ -57,6 +60,7 @@ namespace SaddlebagExchange.Services
             return wrapper?.Data ?? new List<MarketshareResultItem>();
         }
 
-        public void Dispose() => _http.Dispose();
+        /// <summary>No-op: client is owned by IHttpClientFactory.</summary>
+        public void Dispose() { }
     }
 }
