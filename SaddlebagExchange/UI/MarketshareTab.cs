@@ -32,6 +32,7 @@ namespace SaddlebagExchange.UI
         private string _selectedDataCenter = string.Empty;
         private bool _showFiltersPopup;
         private MarketshareResultsWindow? _resultsWindow;
+        private volatile bool _requestOpenResultsWindow;
         private MarketshareTreemapWindow? _treemapWindow;
         private int _treemapMetricIndex;
         private bool _showColumnsPopup;
@@ -815,7 +816,7 @@ namespace SaddlebagExchange.UI
                     var list = await _api.MarketshareAsync(_params, CancellationToken.None).ConfigureAwait(false);
                     var results = (list ?? new List<MarketshareResultItem>()).ToImmutableArray();
                     _state = new ScanState<MarketshareResultItem>(false, results, string.Empty);
-                    if (_resultsWindow != null) _resultsWindow.IsOpen = results.Length > 0;
+                    if (results.Length > 0) _requestOpenResultsWindow = true;
                 }
                 catch (Exception ex)
                 {

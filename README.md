@@ -65,9 +65,11 @@ To submit the plugin to the **official Dalamud plugin repo** ([DalamudPluginsD17
 - **Purpose:** Tells the D17 repo where the plugin lives, who maintains it, and which commit to build. One PR = one plugin; new plugins go to the **testing/live** track (not stable).
 - **Before opening your PR:**
   1. Set **`commit`** to the **exact full commit hash** of the version you are submitting. You can run the helper script from repo root:
+
      ```bash
      bash scripts/update-manifest-commit.sh
      ```
+
      Or PowerShell: `.\scripts\update-manifest-commit.ps1`  
      This writes the current `git rev-parse HEAD` into `SaddlebagExchange/manifest.toml`. Leave `commit` empty only while developing; the D17 build will fail without a valid commit.
   2. Update **`changelog`** if you’re submitting a new version.
@@ -96,7 +98,7 @@ winget install Microsoft.DotNet.SDK.10
 
 Then close and reopen your terminal so `dotnet` is on PATH.
 
-**Why .NET 10?** The project targets `net10.0` to match your XIVLauncher/Dalamud dev hooks (Dalamud 14 is built for .NET 10). Targeting `net10.0` would require a .NET 9–compatible Dalamud (e.g. in CI or when the ecosystem moves).
+**Why .NET 10?** The project targets `net10.0` to match your XIVLauncher/Dalamud dev hooks (Dalamud 14 is built for .NET 10). Targeting `net9.0` would require a .NET 9–compatible Dalamud (e.g. in CI or when the ecosystem moves).
 
 ---
 

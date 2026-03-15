@@ -16,4 +16,4 @@ $content = Get-Content $manifestPath -Raw
 $content = $content -replace '(?m)^commit = .*$', "commit = `"$commit`""
 Set-Content $manifestPath -Value $content.TrimEnd() -NoNewline
 
-Write-Host "Set SaddlebagExchange/manifest.toml commit to $commit"
+Write-Output "Set SaddlebagExchange/manifest.toml commit to $commit"

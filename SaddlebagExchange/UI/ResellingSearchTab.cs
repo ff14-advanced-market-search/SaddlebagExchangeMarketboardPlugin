@@ -24,6 +24,7 @@ namespace SaddlebagExchange.UI
         private int _sortColumnIndex = -1;
         private bool _sortAscending = true;
         private ResellingResultsWindow? _resultsWindow;
+        private volatile bool _requestOpenResultsWindow;
         private bool _showColumnsPopup;
         private bool _showFiltersPopup;
         private string _selectedDataCenter = string.Empty;
@@ -279,7 +280,11 @@ namespace SaddlebagExchange.UI
                 return;
             }
 
-            if (_resultsWindow != null) _resultsWindow.IsOpen = true;
+            if (_requestOpenResultsWindow && _resultsWindow != null)
+            {
+                _resultsWindow.IsOpen = true;
+                _requestOpenResultsWindow = false;
+            }
         }
 
         /// <summary>Called by <see cref="ResellingResultsWindow"/> when it draws. Draws the results table or empty state.</summary>
@@ -469,8 +474,7 @@ namespace SaddlebagExchange.UI
                     var list = await _api.ScanAsync(_params).ConfigureAwait(false);
                     var results = (list ?? new List<ResellingResultItem>()).ToImmutableArray();
                     _state = new ScanState<ResellingResultItem>(false, results, string.Empty);
-                    if (results.Length > 0 && _resultsWindow != null)
-                        _resultsWindow.IsOpen = true;
+                    if (results.Length > 0) _requestOpenResultsWindow = true;
                 }
                 catch (Exception ex)
                 {
