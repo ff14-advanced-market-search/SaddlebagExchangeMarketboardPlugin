@@ -27,7 +27,7 @@ namespace SaddlebagExchange.UI
         private string _errorMessage = string.Empty;
         private int _sortColumnIndex = -1;
         private bool _sortAscending = true;
-        private bool _resultsWindowOpen;
+        private ResellingResultsWindow? _resultsWindow;
         private bool _showColumnsPopup;
         private bool _showFiltersPopup;
         private string _selectedDataCenter = string.Empty;
@@ -288,10 +288,23 @@ namespace SaddlebagExchange.UI
                 return;
             }
 
-            if (ImGui.Begin("Saddlebag Exchange - Results", ref _resultsWindowOpen, ImGuiWindowFlags.None))
-                DrawResultsTable(results);
-            ImGui.End();
+            _resultsWindow?.IsOpen = true;
         }
+
+        /// <summary>Called by <see cref="ResellingResultsWindow"/> when it draws. Draws the results table or empty state.</summary>
+        public void DrawResultsContent()
+        {
+            List<ResellingResultItem> results;
+            lock (_scanLock) { results = _scanResults ?? new List<ResellingResultItem>(); }
+            if (results == null || results.Count == 0)
+            {
+                ImGui.Text("Run a search to see results.");
+                return;
+            }
+            DrawResultsTable(results);
+        }
+
+        public void SetResultsWindow(ResellingResultsWindow? window) => _resultsWindow = window;
 
         private static bool MatchesSearch(ResellingResultItem row, string search)
         {
@@ -309,14 +322,11 @@ namespace SaddlebagExchange.UI
             if (string.IsNullOrEmpty(text)) return;
             try
             {
-                if (OperatingSystem.IsWindows())
+                ImGui.SetClipboardText(text);
+                if (!string.IsNullOrEmpty(notificationMessage))
                 {
-                    ClipboardHelper.SetText(text);
-                    if (!string.IsNullOrEmpty(notificationMessage))
-                    {
-                        _copyNotificationText = notificationMessage;
-                        _copyNotificationUntil = DateTime.UtcNow + TimeSpan.FromSeconds(2);
-                    }
+                    _copyNotificationText = notificationMessage;
+                    _copyNotificationUntil = DateTime.UtcNow + TimeSpan.FromSeconds(2);
                 }
             }
             catch
@@ -476,7 +486,7 @@ namespace SaddlebagExchange.UI
                         _scanResults = list ?? new List<ResellingResultItem>();
                         _scanInProgress = false;
                         if (list != null && list.Count > 0)
-                            _resultsWindowOpen = true;
+                            _resultsWindow?.IsOpen = true;
                     }
                 }
                 catch (System.Exception ex)
@@ -839,74 +849,5 @@ namespace SaddlebagExchange.UI
         }
 
         public void Dispose() => _api.Dispose();
-    }
-
-    internal static class ClipboardHelper
-    {
-        private const uint CF_UNICODETEXT = 13;
-
-        [DllImport("user32.dll", SetLastError = true)]
-        private static extern bool OpenClipboard(IntPtr hWndNewOwner);
-
-        [DllImport("user32.dll", SetLastError = true)]
-        private static extern bool CloseClipboard();
-
-        [DllImport("user32.dll")]
-        private static extern bool EmptyClipboard();
-
-        [DllImport("user32.dll")]
-        private static extern IntPtr SetClipboardData(uint uFormat, IntPtr hMem);
-
-        [DllImport("kernel32.dll")]
-        private static extern IntPtr GlobalAlloc(uint uFlags, UIntPtr dwBytes);
-
-        [DllImport("kernel32.dll")]
-        private static extern IntPtr GlobalLock(IntPtr hMem);
-
-        [DllImport("kernel32.dll")]
-        private static extern bool GlobalUnlock(IntPtr hMem);
-
-        [DllImport("kernel32.dll")]
-        private static extern IntPtr GlobalFree(IntPtr hMem);
-
-        private const uint GMEM_MOVEABLE = 0x0002;
-
-        public static void SetText(string text)
-        {
-            if (text == null) return;
-            var bytes = (text.Length + 1) * 2;
-            var hMem = GlobalAlloc(GMEM_MOVEABLE, (UIntPtr)bytes);
-            if (hMem == IntPtr.Zero) return;
-            var ptr = GlobalLock(hMem);
-            if (ptr == IntPtr.Zero)
-            {
-                GlobalFree(hMem);
-                return;
-            }
-            try
-            {
-                Marshal.Copy(text.ToCharArray(), 0, ptr, text.Length);
-                Marshal.WriteInt16(ptr, text.Length * 2, 0);
-            }
-            finally
-            {
-                GlobalUnlock(hMem);
-            }
-            if (!OpenClipboard(IntPtr.Zero))
-            {
-                GlobalFree(hMem);
-                return;
-            }
-            try
-            {
-                EmptyClipboard();
-                if (SetClipboardData(CF_UNICODETEXT, hMem) == IntPtr.Zero)
-                    GlobalFree(hMem);
-            }
-            finally
-            {
-                CloseClipboard();
-            }
-        }
     }
 }

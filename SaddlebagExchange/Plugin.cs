@@ -17,14 +17,33 @@ namespace SaddlebagExchange
         private readonly Action _onOpenUi;
         private IDalamudPluginInterface? _pi;
         private ICommandManager _cmd;
+        private readonly Configuration _config;
+        private readonly IPluginLog? _log;
 
-        public Plugin(IDalamudPluginInterface pluginInterface, ICommandManager commandManager)
+        public Plugin(
+            IDalamudPluginInterface pluginInterface,
+            ICommandManager commandManager,
+            IPluginLog log)
         {
             _pi = pluginInterface;
             _cmd = commandManager;
+            _log = log;
+            _config = pluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
             _windowSystem = new WindowSystem(Name);
-            _mainWindow = new MainWindow(pluginInterface);
+            _mainWindow = new MainWindow(pluginInterface, _config, () => _pi?.SavePluginConfig(_config));
             _windowSystem.AddWindow(_mainWindow);
+
+            var resellingResultsWindow = new ResellingResultsWindow(_mainWindow.GetResellingTab());
+            _mainWindow.GetResellingTab().SetResultsWindow(resellingResultsWindow);
+            _windowSystem.AddWindow(resellingResultsWindow);
+
+            var marketshareResultsWindow = new MarketshareResultsWindow(_mainWindow.GetMarketshareTab());
+            var marketshareTreemapWindow = new MarketshareTreemapWindow(_mainWindow.GetMarketshareTab());
+            _mainWindow.GetMarketshareTab().SetResultsWindow(marketshareResultsWindow);
+            _mainWindow.GetMarketshareTab().SetTreemapWindow(marketshareTreemapWindow);
+            _windowSystem.AddWindow(marketshareResultsWindow);
+            _windowSystem.AddWindow(marketshareTreemapWindow);
+
             _onDraw = () => _windowSystem.Draw();
             _onOpenUi = () => _mainWindow.IsOpen = true;
 
@@ -42,6 +61,7 @@ namespace SaddlebagExchange
             }
             catch { /* ignore if already registered or failed */ }
 
+            _log?.Information("Saddlebag Exchange loaded.");
             TrySetDefaultHomeServer(pluginInterface);
         }
 

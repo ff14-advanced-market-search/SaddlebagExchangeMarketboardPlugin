@@ -1,6 +1,4 @@
 using System;
-using System.IO;
-using System.Reflection;
 using System.Numerics;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Utility;
@@ -17,92 +15,35 @@ namespace SaddlebagExchange.UI
         private readonly ResellingSearchTab _resellingSearch = new();
         private readonly MarketshareTab _marketshareTab = new();
         private readonly IDalamudPluginInterface? _pluginInterface;
-        private string _defaultHomeServer = string.Empty;
+        private readonly Configuration _config;
+        private readonly Action? _onSaveConfig;
 
-        public MainWindow(IDalamudPluginInterface? pluginInterface)
+        public MainWindow(IDalamudPluginInterface? pluginInterface, Configuration config, Action? onSaveConfig)
             : base("Saddlebag Exchange")
         {
             _pluginInterface = pluginInterface;
-            LoadDefaultHomeServer();
+            _config = config;
+            _onSaveConfig = onSaveConfig;
+            if (!string.IsNullOrEmpty(_config.DefaultHomeServer))
+            {
+                _resellingSearch.SetDefaultHomeServer(_config.DefaultHomeServer);
+                _marketshareTab.SetDefaultHomeServer(_config.DefaultHomeServer);
+            }
         }
 
-        public string GetDefaultHomeServer() => _defaultHomeServer;
+        public string GetDefaultHomeServer() => _config.DefaultHomeServer ?? string.Empty;
 
         public void SetDefaultHomeServer(string? homeServer)
         {
-            _defaultHomeServer = (homeServer ?? string.Empty).Trim();
-            SaveDefaultHomeServer();
-            _resellingSearch.SetDefaultHomeServer(string.IsNullOrEmpty(_defaultHomeServer) ? null : _defaultHomeServer);
-            _marketshareTab.SetDefaultHomeServer(string.IsNullOrEmpty(_defaultHomeServer) ? null : _defaultHomeServer);
+            var value = (homeServer ?? string.Empty).Trim();
+            _config.DefaultHomeServer = value;
+            _onSaveConfig?.Invoke();
+            _resellingSearch.SetDefaultHomeServer(string.IsNullOrEmpty(value) ? null : value);
+            _marketshareTab.SetDefaultHomeServer(string.IsNullOrEmpty(value) ? null : value);
         }
 
-        private string GetConfigFilePath()
-        {
-            if (_pluginInterface != null)
-            {
-                try
-                {
-                    var configDir = _pluginInterface.GetPluginConfigDirectory();
-                    if (!string.IsNullOrEmpty(configDir))
-                        return Path.Combine(configDir, "default_home_server.txt");
-                }
-                catch { /* fallback */ }
-            }
-            var dir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            return Path.Combine(dir ?? ".", "default_home_server.txt");
-        }
-
-        private static string GetLegacyConfigFilePath()
-        {
-            var dir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            return Path.Combine(dir ?? ".", "default_home_server.txt");
-        }
-
-        private void LoadDefaultHomeServer()
-        {
-            try
-            {
-                var path = GetConfigFilePath();
-                if (!File.Exists(path))
-                {
-                    var legacyPath = GetLegacyConfigFilePath();
-                    if (legacyPath != path && File.Exists(legacyPath))
-                    {
-                        var s = File.ReadAllText(legacyPath).Trim();
-                        if (!string.IsNullOrEmpty(s))
-                        {
-                            _defaultHomeServer = s;
-                            _resellingSearch.SetDefaultHomeServer(_defaultHomeServer);
-                            _marketshareTab.SetDefaultHomeServer(_defaultHomeServer);
-                            SaveDefaultHomeServer();
-                        }
-                    }
-                    return;
-                }
-                var content = File.ReadAllText(path).Trim();
-                if (string.IsNullOrEmpty(content)) return;
-                _defaultHomeServer = content;
-                _resellingSearch.SetDefaultHomeServer(_defaultHomeServer);
-                _marketshareTab.SetDefaultHomeServer(_defaultHomeServer);
-            }
-            catch { /* ignore */ }
-        }
-
-        private void SaveDefaultHomeServer()
-        {
-            try
-            {
-                var path = GetConfigFilePath();
-                if (string.IsNullOrEmpty(_defaultHomeServer))
-                {
-                    if (File.Exists(path))
-                        File.Delete(path);
-                    return;
-                }
-                File.WriteAllText(path, _defaultHomeServer);
-            }
-            catch { /* ignore */ }
-        }
+        public ResellingSearchTab GetResellingTab() => _resellingSearch;
+        public MarketshareTab GetMarketshareTab() => _marketshareTab;
 
         public override void Draw()
         {

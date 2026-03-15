@@ -33,8 +33,8 @@ namespace SaddlebagExchange.UI
         private string _selectedDataCenter = string.Empty;
         private string _errorMessage = string.Empty;
         private bool _showFiltersPopup;
-        private bool _resultsWindowOpen;
-        private bool _treemapWindowOpen;
+        private MarketshareResultsWindow? _resultsWindow;
+        private MarketshareTreemapWindow? _treemapWindow;
         private int _treemapMetricIndex;
         private bool _showColumnsPopup;
         private readonly byte[] _searchBuffer = new byte[SearchBufferSize];
@@ -243,13 +243,139 @@ namespace SaddlebagExchange.UI
                 return;
             }
 
-            if (ImGui.Begin("Saddlebag Exchange - Market Overview Results", ref _resultsWindowOpen, ImGuiWindowFlags.None))
-                DrawResultsTable(results);
-            ImGui.End();
-
-            if (_treemapWindowOpen)
-                DrawTreemapWindow();
+            _resultsWindow?.IsOpen = true;
         }
+
+        /// <summary>Called by <see cref="MarketshareResultsWindow"/> when it draws.</summary>
+        public void DrawResultsContent()
+        {
+            List<MarketshareResultItem> results;
+            lock (_scanLock) { results = _scanResults ?? new List<MarketshareResultItem>(); }
+            if (results == null || results.Count == 0)
+            {
+                ImGui.Text("Run a search to see results.");
+                return;
+            }
+            DrawResultsTable(results);
+        }
+
+        /// <summary>Called by <see cref="MarketshareTreemapWindow"/> when it draws.</summary>
+        public void DrawTreemapContent()
+        {
+            List<MarketshareResultItem> results;
+            lock (_scanLock) { results = _scanResults ?? new List<MarketshareResultItem>(); }
+            if (results == null || results.Count == 0)
+            {
+                ImGui.Text("Run a search to see treemap data.");
+                return;
+            }
+
+            ImGui.Text("Sort treemap by:");
+            ImGui.SameLine();
+            ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new System.Numerics.Vector2(4f, 2f));
+            for (int i = 0; i < TreemapMetricLabels.Length; i++)
+            {
+                if (i > 0) ImGui.SameLine();
+                bool selected = _treemapMetricIndex == i;
+                if (selected)
+                {
+                    ImGui.PushStyleColor(ImGuiCol.Button, new System.Numerics.Vector4(0.2f, 0.4f, 0.7f, 1f));
+                    ImGui.PushStyleColor(ImGuiCol.ButtonHovered, new System.Numerics.Vector4(0.25f, 0.45f, 0.75f, 1f));
+                    ImGui.PushStyleColor(ImGuiCol.ButtonActive, new System.Numerics.Vector4(0.15f, 0.35f, 0.65f, 1f));
+                }
+                if (ImGui.Button(TreemapMetricLabels[i]))
+                    _treemapMetricIndex = i;
+                if (selected)
+                    ImGui.PopStyleColor(3);
+            }
+            ImGui.PopStyleVar();
+            ImGui.Separator();
+            ImGui.Spacing();
+
+            var treemapAvail = ImGui.GetContentRegionAvail();
+            float treemapMinH = 280f * ImGuiHelpers.GlobalScale;
+            using (var child = ImRaii.Child("##treemap_canvas", new System.Numerics.Vector2(treemapAvail.X, Math.Max(treemapMinH, treemapAvail.Y)), true, ImGuiWindowFlags.None))
+            {
+                if (!child.Success)
+                    return;
+
+                const int maxItems = 48;
+                const int cols = 8;
+                var items = results
+                    .Select(r => (r, v: Math.Max(0, GetTreemapMetricValue(r, _treemapMetricIndex))))
+                    .Where(t => t.v > 0)
+                    .OrderByDescending(t => t.v)
+                    .Take(maxItems)
+                    .ToList();
+                if (items.Count == 0)
+                {
+                    ImGui.Text("No data for this metric.");
+                    return;
+                }
+
+                double total = items.Sum(t => t.v);
+                if (total <= 0) total = 1;
+                var avail = ImGui.GetContentRegionAvail();
+                float canvasW = avail.X;
+                float canvasH = Math.Max(200f * ImGuiHelpers.GlobalScale, avail.Y);
+                int numRows = (items.Count + cols - 1) / cols;
+                float rowHeightSum = 0f;
+                for (int r = 0; r < numRows; r++)
+                {
+                    int start = r * cols;
+                    int count = Math.Min(cols, items.Count - start);
+                    double rowSum = 0;
+                    for (int i = start; i < start + count; i++)
+                        rowSum += items[i].v;
+                    rowHeightSum += (float)(rowSum / total) * canvasH;
+                }
+                if (rowHeightSum <= 0) rowHeightSum = canvasH;
+                float y = 0f;
+                int idx = 0;
+                for (int r = 0; r < numRows; r++)
+                {
+                    int start = r * cols;
+                    int count = Math.Min(cols, items.Count - start);
+                    double rowSum = 0;
+                    for (int i = start; i < start + count; i++)
+                        rowSum += items[i].v;
+                    if (rowSum <= 0) rowSum = 1;
+                    float rowH = (float)(rowSum / total) * canvasH;
+                    float x = 0f;
+                    for (int c = 0; c < count; c++)
+                    {
+                        int i = start + c;
+                        var (rowItem, val) = items[i];
+                        float cellW = (float)(val / rowSum) * canvasW;
+                        if (cellW < 2f) cellW = 2f;
+                        ImGui.SetCursorPos(new System.Numerics.Vector2(x, y));
+                        var colV4 = TreemapColorForState(rowItem.State);
+                        ImGui.PushStyleColor(ImGuiCol.Button, colV4);
+                        ImGui.PushStyleColor(ImGuiCol.ButtonHovered, colV4);
+                        ImGui.PushStyleColor(ImGuiCol.ButtonActive, colV4);
+                        string label = "##tm" + idx;
+                        if (ImGui.Button(label, new System.Numerics.Vector2(cellW, rowH)))
+                            { }
+                        if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+                        {
+                            string name = !string.IsNullOrEmpty(rowItem.ItemName) ? rowItem.ItemName : rowItem.ItemId.ToString();
+                            string valStr = _treemapMetricIndex == 1
+                                ? rowItem.PercentChange.ToString("F2") + "%"
+                                : (_treemapMetricIndex == 0 || _treemapMetricIndex >= 4 ? ((long)val).ToString("N0") : ((long)val).ToString());
+                            string statePart = !string.IsNullOrEmpty(rowItem.State) ? $" ({rowItem.State})" : "";
+                            ImGui.SetTooltip($"{name}: {valStr}{statePart}");
+                        }
+                        ImGui.PopStyleColor(3);
+                        x += cellW;
+                        idx++;
+                    }
+                    y += rowH;
+                }
+            }
+        }
+
+        public void SetResultsWindow(MarketshareResultsWindow? window) => _resultsWindow = window;
+        public void SetTreemapWindow(MarketshareTreemapWindow? window) => _treemapWindow = window;
 
         private void DrawResultsTable(List<MarketshareResultItem> results)
         {
@@ -421,14 +547,11 @@ namespace SaddlebagExchange.UI
             if (string.IsNullOrEmpty(text)) return;
             try
             {
-                if (OperatingSystem.IsWindows())
+                ImGui.SetClipboardText(text);
+                if (!string.IsNullOrEmpty(notificationMessage))
                 {
-                    ClipboardHelper.SetText(text);
-                    if (!string.IsNullOrEmpty(notificationMessage))
-                    {
-                        _copyNotificationText = notificationMessage;
-                        _copyNotificationUntil = DateTime.UtcNow + TimeSpan.FromSeconds(2);
-                    }
+                    _copyNotificationText = notificationMessage;
+                    _copyNotificationUntil = DateTime.UtcNow + TimeSpan.FromSeconds(2);
                 }
             }
             catch { /* ignore */ }
@@ -639,134 +762,6 @@ namespace SaddlebagExchange.UI
             return new System.Numerics.Vector4(0.42f, 0.42f, 0.42f, 1f);
         }
 
-        private void DrawTreemapWindow()
-        {
-            List<MarketshareResultItem> results;
-            lock (_scanLock) { results = _scanResults ?? new List<MarketshareResultItem>(); }
-            if (results.Count == 0)
-            {
-                _treemapWindowOpen = false;
-                return;
-            }
-
-            float treemapWinW = 720f * ImGuiHelpers.GlobalScale;
-            float treemapWinH = 520f * ImGuiHelpers.GlobalScale;
-            ImGui.SetNextWindowSize(new System.Numerics.Vector2(treemapWinW, treemapWinH), ImGuiCond.FirstUseEver);
-            if (!ImGui.Begin("Market Overview - Treemap", ref _treemapWindowOpen, ImGuiWindowFlags.None))
-            {
-                ImGui.End();
-                return;
-            }
-
-            ImGui.Text("Sort treemap by:");
-            ImGui.SameLine();
-            ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new System.Numerics.Vector2(4f, 2f));
-            for (int i = 0; i < TreemapMetricLabels.Length; i++)
-            {
-                if (i > 0) ImGui.SameLine();
-                bool selected = _treemapMetricIndex == i;
-                if (selected)
-                {
-                    ImGui.PushStyleColor(ImGuiCol.Button, new System.Numerics.Vector4(0.2f, 0.4f, 0.7f, 1f));
-                    ImGui.PushStyleColor(ImGuiCol.ButtonHovered, new System.Numerics.Vector4(0.25f, 0.45f, 0.75f, 1f));
-                    ImGui.PushStyleColor(ImGuiCol.ButtonActive, new System.Numerics.Vector4(0.15f, 0.35f, 0.65f, 1f));
-                }
-                if (ImGui.Button(TreemapMetricLabels[i]))
-                    _treemapMetricIndex = i;
-                if (selected)
-                    ImGui.PopStyleColor(3);
-            }
-            ImGui.PopStyleVar();
-            ImGui.Separator();
-            ImGui.Spacing();
-
-            var treemapAvail = ImGui.GetContentRegionAvail();
-            float treemapMinH = 280f * ImGuiHelpers.GlobalScale;
-            using (var child = ImRaii.Child("##treemap_canvas", new System.Numerics.Vector2(treemapAvail.X, Math.Max(treemapMinH, treemapAvail.Y)), true, ImGuiWindowFlags.None))
-            {
-                if (!child.Success)
-                {
-                    ImGui.End();
-                    return;
-                }
-
-                const int maxItems = 48;
-                const int cols = 8;
-                var items = results
-                    .Select(r => (r, v: Math.Max(0, GetTreemapMetricValue(r, _treemapMetricIndex))))
-                    .Where(t => t.v > 0)
-                    .OrderByDescending(t => t.v)
-                    .Take(maxItems)
-                    .ToList();
-                if (items.Count == 0)
-                {
-                    ImGui.Text("No data for this metric.");
-                    ImGui.End();
-                    return;
-                }
-
-                double total = items.Sum(t => t.v);
-                if (total <= 0) total = 1;
-                var avail = ImGui.GetContentRegionAvail();
-                float canvasW = avail.X;
-                float canvasH = Math.Max(200f * ImGuiHelpers.GlobalScale, avail.Y);
-                int numRows = (items.Count + cols - 1) / cols;
-                float rowHeightSum = 0f;
-                for (int r = 0; r < numRows; r++)
-                {
-                    int start = r * cols;
-                    int count = Math.Min(cols, items.Count - start);
-                    double rowSum = 0;
-                    for (int i = start; i < start + count; i++)
-                        rowSum += items[i].v;
-                    rowHeightSum += (float)(rowSum / total) * canvasH;
-                }
-                if (rowHeightSum <= 0) rowHeightSum = canvasH;
-                float y = 0f;
-                int idx = 0;
-                for (int r = 0; r < numRows; r++)
-                {
-                    int start = r * cols;
-                    int count = Math.Min(cols, items.Count - start);
-                    double rowSum = 0;
-                    for (int i = start; i < start + count; i++)
-                        rowSum += items[i].v;
-                    if (rowSum <= 0) rowSum = 1;
-                    float rowH = (float)(rowSum / total) * canvasH;
-                    float x = 0f;
-                    for (int c = 0; c < count; c++)
-                    {
-                        int i = start + c;
-                        var (rowItem, val) = items[i];
-                        float cellW = (float)(val / rowSum) * canvasW;
-                        if (cellW < 2f) cellW = 2f;
-                        ImGui.SetCursorPos(new System.Numerics.Vector2(x, y));
-                        var colV4 = TreemapColorForState(rowItem.State);
-                        ImGui.PushStyleColor(ImGuiCol.Button, colV4);
-                        ImGui.PushStyleColor(ImGuiCol.ButtonHovered, colV4);
-                        ImGui.PushStyleColor(ImGuiCol.ButtonActive, colV4);
-                        string label = "##tm" + idx;
-                        if (ImGui.Button(label, new System.Numerics.Vector2(cellW, rowH)))
-                            { }
-                        if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-                        {
-                            string name = !string.IsNullOrEmpty(rowItem.ItemName) ? rowItem.ItemName : rowItem.ItemId.ToString();
-                            string valStr = _treemapMetricIndex == 1
-                                ? rowItem.PercentChange.ToString("F2") + "%"
-                                : (_treemapMetricIndex == 0 || _treemapMetricIndex >= 4 ? ((long)val).ToString("N0") : ((long)val).ToString());
-                            string statePart = !string.IsNullOrEmpty(rowItem.State) ? $" ({rowItem.State})" : "";
-                            ImGui.SetTooltip($"{name}: {valStr}{statePart}");
-                        }
-                        ImGui.PopStyleColor(3);
-                        x += cellW;
-                        idx++;
-                    }
-                    y += rowH;
-                }
-            }
-            ImGui.End();
-        }
-
         private void ApplyPreset(MarketshareParams p)
         {
             // Preserve current server when preset doesn't specify one (presets use Server = string.Empty)
@@ -835,7 +830,7 @@ namespace SaddlebagExchange.UI
                     {
                         _scanResults = list ?? new List<MarketshareResultItem>();
                         _scanInProgress = false;
-                        _resultsWindowOpen = _scanResults.Count > 0;
+                        _resultsWindow?.IsOpen = _scanResults.Count > 0;
                     }
                 }
                 catch (Exception ex)
