@@ -31,7 +31,28 @@ Updates are delivered through the same repo; the installer will use the latest r
 
 **If install fails:** Restart the game and try again. If it still fails, check the Dalamud log (XIVLauncher → Settings → open the log/data folder, or `%AppData%\XIVLauncher\log`) for the exact error (e.g. download failure, invalid zip, or missing manifest). The release zip has **SaddlebagExchange.dll**, **manifest.json**, and **icon.png** at the archive root (no nested folder).
 
-## Creating a release
+## One-button release
+
+From repo root, run one of (replace `1.0.11` with your version):
+
+```bash
+bash scripts/release.sh 1.0.11
+```
+
+Or PowerShell: `.\scripts\release.ps1 1.0.11`
+
+The script will:
+
+1. Bump **version** in `SaddlebagExchange/SaddlebagExchange.csproj` (`AssemblyVersion`) and `repo.json` (`AssemblyVersion` + `LastUpdated` timestamp).
+2. **Git:** `git add -A`, `git status`, `git commit -m "Release X.Y.Z"`, `git push origin main`.
+3. **Tag:** `git tag vX.Y.Z`, `git push origin vX.Y.Z`.
+4. Set **`SaddlebagExchange/manifest.toml`** `commit` to the release commit hash, then commit and push that change.
+
+After the script finishes, **GitHub Actions** runs the Release workflow. Check **Actions** on the repo; when the workflow is green, the **Releases** page will have the new release and **SaddlebagExchange.zip**.
+
+## Creating a release (manual)
+
+For reference, the manual steps the one-button script performs:
 
 1. **Commit and push** all changes (workflow, repo.json, project, code).
 2. **Set version** in `SaddlebagExchange/SaddlebagExchange.csproj` → `AssemblyVersion` (e.g. `1.0.0`). Optionally update `repo.json` → `AssemblyVersion` and `LastUpdated` (Unix timestamp) so the plugin list shows the right version. API level is derived from the SDK in the project; when you upgrade the Dalamud SDK (e.g. to 15.x), update `repo.json` → `DalamudApiLevel` to match the SDK major version.
@@ -56,6 +77,8 @@ git push origin main
 git tag v1.0.7
 git push origin v1.0.7
 ```
+
+5. Set **manifest.toml** `commit` to the release commit hash: run `scripts/update-manifest-commit.ps1` or `scripts/update-manifest-commit.sh` (after the release commit is pushed, so HEAD is the release), then commit and push the manifest change.
 
 ## D17 submission (manifest.toml)
 
