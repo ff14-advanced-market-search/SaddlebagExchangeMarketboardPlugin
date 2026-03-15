@@ -1,9 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Utility;
@@ -19,12 +18,9 @@ namespace SaddlebagExchange.UI
         private const float SearchInputWidth = 200f;
 
         private readonly SaddlebagApiService _api = new();
-        private readonly object _scanLock = new();
+        private volatile ScanState<ResellingResultItem> _state = ScanState<ResellingResultItem>.Idle;
         private ResellingParams _params = GetDefaultParams();
-        private List<ResellingResultItem> _scanResults = new();
-        private bool _scanInProgress;
         private string _homeServerBuffer = string.Empty;
-        private string _errorMessage = string.Empty;
         private int _sortColumnIndex = -1;
         private bool _sortAscending = true;
         private ResellingResultsWindow? _resultsWindow;
@@ -144,8 +140,8 @@ namespace SaddlebagExchange.UI
 
         public void Draw()
         {
-            string errorMessage;
-            lock (_scanLock) { errorMessage = _errorMessage ?? string.Empty; }
+            var snapshot = _state;
+            string errorMessage = snapshot.Error ?? string.Empty;
 
             ImGui.Spacing();
             ImGui.Text("Reselling Search");
@@ -268,13 +264,8 @@ namespace SaddlebagExchange.UI
             ImGui.Spacing();
 
             // --- Results ---
-            bool loading;
-            List<ResellingResultItem> results;
-            lock (_scanLock)
-            {
-                loading = _scanInProgress;
-                results = _scanResults;
-            }
+            bool loading = snapshot.Loading;
+            IReadOnlyList<ResellingResultItem> results = snapshot.Results;
 
             if (loading)
             {
@@ -294,9 +285,8 @@ namespace SaddlebagExchange.UI
         /// <summary>Called by <see cref="ResellingResultsWindow"/> when it draws. Draws the results table or empty state.</summary>
         public void DrawResultsContent()
         {
-            List<ResellingResultItem> results;
-            lock (_scanLock) { results = _scanResults ?? new List<ResellingResultItem>(); }
-            if (results == null || results.Count == 0)
+            var results = _state.Results;
+            if (results.IsDefaultOrEmpty)
             {
                 ImGui.Text("Run a search to see results.");
                 return;
@@ -468,35 +458,23 @@ namespace SaddlebagExchange.UI
             _params.HomeServer = _homeServerBuffer.Trim();
             if (string.IsNullOrEmpty(_params.HomeServer))
             {
-                lock (_scanLock) { _errorMessage = "Set Home server first."; }
+                _state = _state with { Error = "Set Home server first." };
                 return;
             }
-            lock (_scanLock)
-            {
-                _errorMessage = string.Empty;
-                _scanInProgress = true;
-            }
+            _state = _state with { Loading = true, Error = string.Empty };
             _ = Task.Run(async () =>
             {
                 try
                 {
                     var list = await _api.ScanAsync(_params).ConfigureAwait(false);
-                    lock (_scanLock)
-                    {
-                        _scanResults = list ?? new List<ResellingResultItem>();
-                        _scanInProgress = false;
-                        if (list != null && list.Count > 0)
-                            if (_resultsWindow != null) _resultsWindow.IsOpen = true;
-                    }
+                    var results = (list ?? new List<ResellingResultItem>()).ToImmutableArray();
+                    _state = new ScanState<ResellingResultItem>(false, results, string.Empty);
+                    if (results.Length > 0 && _resultsWindow != null)
+                        _resultsWindow.IsOpen = true;
                 }
-                catch (System.Exception ex)
+                catch (Exception ex)
                 {
-                    lock (_scanLock)
-                    {
-                        _scanResults = new List<ResellingResultItem>();
-                        _scanInProgress = false;
-                        _errorMessage = ex.Message;
-                    }
+                    _state = new ScanState<ResellingResultItem>(false, ImmutableArray<ResellingResultItem>.Empty, ex.Message);
                 }
             });
         }
@@ -529,7 +507,7 @@ namespace SaddlebagExchange.UI
             _Count
         }
 
-        private void DrawResultsTable(List<ResellingResultItem> results)
+        private void DrawResultsTable(IReadOnlyList<ResellingResultItem> results)
         {
             EnsureColumnState();
             var visibleCols = _columnOrder.Where(i => _columnVisible[i]).ToList();
@@ -811,10 +789,10 @@ namespace SaddlebagExchange.UI
             };
         }
 
-        private List<ResellingResultItem> SortResults(List<ResellingResultItem> results)
+        private List<ResellingResultItem> SortResults(IReadOnlyList<ResellingResultItem> results)
         {
             if (_sortColumnIndex < 0 || _sortColumnIndex >= (int)ResultColumn._Count)
-                return results;
+                return results.ToList();
             var list = new List<ResellingResultItem>(results);
             int dir = _sortAscending ? 1 : -1;
             list.Sort((a, b) =>
@@ -849,5 +827,10 @@ namespace SaddlebagExchange.UI
         }
 
         public void Dispose() => _api.Dispose();
+
+        private sealed record ScanState<T>(bool Loading, ImmutableArray<T> Results, string Error)
+        {
+            public static ScanState<T> Idle => new(false, ImmutableArray<T>.Empty, string.Empty);
+        }
     }
 }
