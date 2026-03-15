@@ -237,7 +237,11 @@ namespace SaddlebagExchange.UI
                 return;
             }
 
-            if (_resultsWindow != null) _resultsWindow.IsOpen = true;
+            if (_requestOpenResultsWindow && _resultsWindow != null)
+            {
+                _resultsWindow.IsOpen = true;
+                _requestOpenResultsWindow = false;
+            }
         }
 
         /// <summary>Called by <see cref="MarketshareResultsWindow"/> when it draws.</summary>
