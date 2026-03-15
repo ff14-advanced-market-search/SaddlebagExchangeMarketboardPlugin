@@ -3,11 +3,16 @@ using System;
 namespace SaddlebagExchange.UI
 {
     /// <summary>
-    /// FFXIV data centers and worlds for the Home server dropdown (matches frontend WorldList).
+    /// FFXIV data centers and worlds for the Home server dropdown.
+    /// This is the set of worlds that Saddlebag supports; we do not support all game servers.
+    /// The static list is maintained to match the other Saddlebag projects (e.g. saddlebag-with-pockets).
+    /// Reference: https://github.com/ff14-advanced-market-search/saddlebag-with-pockets/blob/master/app/utils/locations/Worlds.ts
     /// </summary>
     public static class WorldList
     {
         private static readonly Lazy<(string DataCenter, string World)[]> AllLazy = new(GetAll);
+
+        /// <summary>Data centers and worlds supported by Saddlebag. Keep in sync with saddlebag-with-pockets Worlds.ts.</summary>
         public static (string DataCenter, string World)[] GetAll()
         {
             return new[]
