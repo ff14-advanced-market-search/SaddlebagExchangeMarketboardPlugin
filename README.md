@@ -96,6 +96,8 @@ winget install Microsoft.DotNet.SDK.10
 
 Then close and reopen your terminal so `dotnet` is on PATH.
 
+**Why .NET 10?** The project targets `net10.0` to match your XIVLauncher/Dalamud dev hooks (Dalamud 14 is built for .NET 10). Targeting `net10.0` would require a .NET 9–compatible Dalamud (e.g. in CI or when the ecosystem moves).
+
 ---
 
 ## Project layout
