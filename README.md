@@ -57,6 +57,20 @@ git tag v1.0.7
 git push origin v1.0.7
 ```
 
+## D17 submission (manifest.toml)
+
+To submit the plugin to the **official Dalamud plugin repo** ([DalamudPluginsD17](https://github.com/GoatCorp/DalamudPluginsD17)), you use the **manifest.toml** file.
+
+- **Location:** `SaddlebagExchange/manifest.toml`
+- **Purpose:** Tells the D17 repo where the plugin lives, who maintains it, and which commit to build. One PR = one plugin; new plugins go to the **testing/live** track (not stable).
+- **Before opening your PR:**
+  1. Set **`commit`** to the **exact full commit hash** of the version you are submitting (e.g. the tip of your release branch or the tag commit). Leave it empty only while developing; the D17 build will fail without a valid commit.
+  2. Update **`changelog`** if you’re submitting a new version.
+  3. Keep **`owners`** as the list of GitHub usernames that maintain the plugin (e.g. `["cohenaj194"]`).
+- **What to include in the PR:** Add the **`SaddlebagExchange/`** folder (including `manifest.toml` and optionally `images/icon.png` and `images/image1.png`…`image5.png`). The D17 README has the full layout (e.g. `MyPluginName/manifest.toml`, `MyPluginName/images/icon.png`). Icon must be square, 64×64 to 512×512 px.
+
+The **repo.json** at the repo root is only for **custom plugin repos** (e.g. the install URL in “Install (for players)”). The D17 build system does **not** use repo.json; it uses **manifest.toml** and builds from the GitHub repo and commit you specify there.
+
 ## Prerequisites
 
 ### Install .NET 10 SDK
@@ -83,7 +97,9 @@ ffxiv-plugin/
 ├── SaddlebagExchange/
 │   ├── SaddlebagExchange.csproj
 │   ├── Plugin.cs
+│   ├── manifest.toml          ← for D17 official repo submission (see "D17 submission" above)
 │   └── ... (manifest.json is generated to bin/<Configuration>/net10.0/)
+├── repo.json                  ← for custom repo install (players); not used by D17
 └── README.md
 ```
 
