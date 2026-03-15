@@ -5,7 +5,7 @@
     "Punchline": "Marketboard analytics for FFXIV",
     "Description": "Advanced marketboard tools and cross-world arbitrage scanning.",
     "InternalName": "SaddlebagExchange",
-    "AssemblyVersion": "1.0.11",
+    "AssemblyVersion": "1.0.12",
     "RepoUrl": "https://github.com/ff14-advanced-market-search/SaddlebagExchangeMarketboardPlugin",
     "ApplicableVersion": "any",
     "DalamudApiLevel": 14,
@@ -15,7 +15,7 @@
     "DownloadLinkTesting": "https://github.com/ff14-advanced-market-search/SaddlebagExchangeMarketboardPlugin/releases/latest/download/SaddlebagExchange.zip",
     "DownloadLinkUpdate": "https://github.com/ff14-advanced-market-search/SaddlebagExchangeMarketboardPlugin/releases/latest/download/SaddlebagExchange.zip",
     "DownloadCount": 0,
-    "LastUpdated": 1742169600,
+    "LastUpdated": 1773590768,
     "Changelog": "Initial release."
   }
 ]
