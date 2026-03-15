@@ -5,6 +5,7 @@ using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
+using Microsoft.Extensions.Http;
 
 namespace SaddlebagExchange.UI
 {
@@ -12,18 +13,20 @@ namespace SaddlebagExchange.UI
     {
         private int _selectedToolIndex;
         private readonly HomeTab _homeTab = new();
-        private readonly ResellingSearchTab _resellingSearch = new();
-        private readonly MarketshareTab _marketshareTab = new();
+        private readonly ResellingSearchTab _resellingSearch;
+        private readonly MarketshareTab _marketshareTab;
         private readonly IDalamudPluginInterface? _pluginInterface;
         private readonly Configuration _config;
         private readonly Action? _onSaveConfig;
 
-        public MainWindow(IDalamudPluginInterface? pluginInterface, Configuration config, Action? onSaveConfig)
+        public MainWindow(IDalamudPluginInterface? pluginInterface, Configuration config, Action? onSaveConfig, IHttpClientFactory httpClientFactory)
             : base("Saddlebag Exchange")
         {
             _pluginInterface = pluginInterface;
             _config = config;
             _onSaveConfig = onSaveConfig;
+            _resellingSearch = new ResellingSearchTab(httpClientFactory);
+            _marketshareTab = new MarketshareTab(httpClientFactory);
             if (!string.IsNullOrEmpty(_config.DefaultHomeServer))
             {
                 _resellingSearch.SetDefaultHomeServer(_config.DefaultHomeServer);

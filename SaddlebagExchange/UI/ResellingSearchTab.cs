@@ -8,6 +8,7 @@ using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Utility;
+using Microsoft.Extensions.Http;
 using SaddlebagExchange.Models;
 using SaddlebagExchange.Services;
 
@@ -17,7 +18,12 @@ namespace SaddlebagExchange.UI
     {
         private const float SearchInputWidth = 200f;
 
-        private readonly SaddlebagApiService _api = new();
+        private readonly SaddlebagApiService _api;
+
+        public ResellingSearchTab(IHttpClientFactory httpClientFactory)
+        {
+            _api = new SaddlebagApiService(httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory)));
+        }
         private volatile ScanState<ResellingResultItem> _state = ScanState<ResellingResultItem>.Idle;
         private ResellingParams _params = GetDefaultParams();
         private string _homeServerBuffer = string.Empty;

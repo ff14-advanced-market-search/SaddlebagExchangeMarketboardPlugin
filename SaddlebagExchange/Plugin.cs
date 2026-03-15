@@ -3,6 +3,8 @@ using Dalamud.Plugin;
 using Dalamud.Game.Command;
 using Dalamud.Plugin.Services;
 using Dalamud.Interface.Windowing;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Http;
 using SaddlebagExchange.UI;
 
 namespace SaddlebagExchange
@@ -10,6 +12,7 @@ namespace SaddlebagExchange
     public sealed class Plugin : IDalamudPlugin
     {
         private const string WindowSystemName = "Saddlebag Exchange";
+        private const string HttpClientName = "SaddlebagExchange";
         private readonly WindowSystem _windowSystem;
         private readonly MainWindow _mainWindow;
         private readonly Action _onDraw;
@@ -18,6 +21,7 @@ namespace SaddlebagExchange
         private ICommandManager _cmd;
         private readonly Configuration _config;
         private readonly IPluginLog _log;
+        private readonly ServiceProvider _serviceProvider;
 
         public Plugin(
             IDalamudPluginInterface pluginInterface,
@@ -28,8 +32,19 @@ namespace SaddlebagExchange
             _cmd = commandManager;
             _log = log;
             _config = pluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
+
+            var services = new ServiceCollection();
+            services.AddHttpClient(HttpClientName, client =>
+            {
+                client.BaseAddress = new Uri("https://api.saddlebagexchange.com");
+                client.DefaultRequestHeaders.Add("Accept", "application/json");
+                client.Timeout = TimeSpan.FromSeconds(30);
+            });
+            _serviceProvider = services.BuildServiceProvider();
+            var httpClientFactory = _serviceProvider.GetRequiredService<IHttpClientFactory>();
+
             _windowSystem = new WindowSystem(WindowSystemName);
-            _mainWindow = new MainWindow(pluginInterface, _config, () => _pi?.SavePluginConfig(_config));
+            _mainWindow = new MainWindow(pluginInterface, _config, () => _pi?.SavePluginConfig(_config), httpClientFactory);
             _windowSystem.AddWindow(_mainWindow);
 
             var resellingResultsWindow = new ResellingResultsWindow(_mainWindow.GetResellingTab());
@@ -75,6 +90,7 @@ namespace SaddlebagExchange
         {
             if (_pi == null) return;
             _mainWindow.Dispose();
+            _serviceProvider.Dispose();
             _windowSystem.RemoveAllWindows();
             var uiBuilder = _pi.UiBuilder;
             uiBuilder.Draw -= _onDraw;
