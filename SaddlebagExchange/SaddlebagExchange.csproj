@@ -1,7 +1,6 @@
-<Project Sdk="Microsoft.NET.Sdk;Dalamud.NET.Sdk/14.0.2">
+<Project Sdk="Dalamud.NET.Sdk/14.0.2">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <AssemblyName>SaddlebagExchange</AssemblyName>
     <ImplicitUsings>enable</ImplicitUsings>
