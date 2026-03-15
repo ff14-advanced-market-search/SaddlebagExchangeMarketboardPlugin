@@ -2,7 +2,7 @@
 # Required before opening the PR: set commit to the exact full SHA (e.g. git rev-parse HEAD). Empty = build will fail.
 [plugin]
 repository = "https://github.com/ff14-advanced-market-search/SaddlebagExchangeMarketboardPlugin"
-commit = "ba6f0ba9c8df89f4df7f6dc38c32c15d4cae2142"
+commit = "83d862ad07e143a8ca5544e2f5de973dcdc90e2d"
 owners = ["cohenaj194"]
 project_path = "SaddlebagExchange"
 changelog = "Initial release."
