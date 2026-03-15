@@ -15,7 +15,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.x'
+          dotnet-version: '10.0.x'
 
       - name: Get version from tag
         id: version
@@ -44,8 +44,8 @@ jobs:
           BIN="${{ github.workspace }}/release_output"
           mkdir -p "$STAGING"
           # Manifest: SDK/GenerateManifest may write to project bin/Release instead of -o; copy from there or generate from repo.json
-          if [ -f "SaddlebagExchange/bin/Release/net9.0-windows/manifest.json" ]; then
-            cp "SaddlebagExchange/bin/Release/net9.0-windows/manifest.json" "$BIN/"
+          if [ -f "SaddlebagExchange/bin/Release/net10.0/manifest.json" ]; then
+            cp "SaddlebagExchange/bin/Release/net10.0/manifest.json" "$BIN/"
           elif [ ! -f "$BIN/manifest.json" ]; then
             jq -c '.[0] | del(.DownloadLinkInstall, .ApplicableVersion, .DownloadLinkTesting, .DownloadLinkUpdate, .DownloadCount, .LastUpdated, .IsHide, .IsTestingExclusive) | . + {LoadRequiredState: 0}' repo.json > "$BIN/manifest.json"
           fi

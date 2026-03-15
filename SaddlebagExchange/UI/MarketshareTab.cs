@@ -423,7 +423,7 @@ namespace SaddlebagExchange.UI
                 _tableIdCounter++;
             ImGui.SameLine();
             if (ImGui.Button("Treemap"))
-                _treemapWindowOpen = true;
+                _treemapWindow?.IsOpen = true;
             if (ImGui.IsItemHovered())
                 ImGui.SetTooltip("Open a heatmap view of the results in a separate window.");
             ImGui.Spacing();
