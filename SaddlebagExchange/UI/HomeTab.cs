@@ -158,11 +158,11 @@ namespace SaddlebagExchange.UI
                         ImGui.SetTooltip("Click to open Shopping List");
                     ImGui.SetCursorScreenPos(shoppingMin);
                     ImGui.PushStyleColor(ImGuiCol.Text, new System.Numerics.Vector4(0.45f, 0.28f, 0.65f, 1f));
-                    ImGui.Text("Shopping List");
+                    ImGui.Text("Shopping List Search");
                     ImGui.PopStyleColor();
                     ImGui.SetCursorPosX(ImGui.GetStyle().WindowPadding.X);
                     ImGui.PushTextWrapPos(ImGui.GetCursorPos().X + wrapX);
-                    ImGui.TextWrapped("Build a list of crafts, choose HQ/job/amount, and find the best worlds to buy materials.");
+                    ImGui.TextWrapped("Helps make a shopping list for bulk crafting sessions, telling you where to find crafting materials for the best prices!");
                     ImGui.PopTextWrapPos();
                 }
             }
