@@ -118,6 +118,30 @@ namespace SaddlebagExchange.UI
                     ImGui.PopTextWrapPos();
                 }
             }
+
+            ImGui.Spacing();
+
+            // Craftsim
+            using (var child = ImRaii.Child("##tool_craftsim", new System.Numerics.Vector2(cardWidth, cardHeight), true, ImGuiWindowFlags.None))
+            {
+                if (child.Success)
+                {
+                    var craftsimMin = ImGui.GetCursorScreenPos();
+                    var craftsimHitSize = ImGui.GetContentRegionAvail();
+                    if (ImGui.InvisibleButton("##btn_craftsim", craftsimHitSize))
+                        onSelectTool(3);
+                    if (ImGui.IsItemHovered())
+                        ImGui.SetTooltip("Click to open Craftsim");
+                    ImGui.SetCursorScreenPos(craftsimMin);
+                    ImGui.PushStyleColor(ImGuiCol.Text, new System.Numerics.Vector4(0.45f, 0.28f, 0.65f, 1f));
+                    ImGui.Text("Craftsim");
+                    ImGui.PopStyleColor();
+                    ImGui.SetCursorPosX(ImGui.GetStyle().WindowPadding.X);
+                    ImGui.PushTextWrapPos(ImGui.GetCursorPos().X + wrapX);
+                    ImGui.TextWrapped("Find profitable crafting opportunities based on material costs, revenue metrics, and sales volume.");
+                    ImGui.PopTextWrapPos();
+                }
+            }
         }
 
         private void DrawDefaultHomeServerSection(Func<string> getDefaultHomeServer, Action<string> setDefaultHomeServer)
