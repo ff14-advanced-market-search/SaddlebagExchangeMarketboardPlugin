@@ -118,6 +118,54 @@ namespace SaddlebagExchange.UI
                     ImGui.PopTextWrapPos();
                 }
             }
+
+            ImGui.Spacing();
+
+            // Craftsim
+            using (var child = ImRaii.Child("##tool_craftsim", new System.Numerics.Vector2(cardWidth, cardHeight), true, ImGuiWindowFlags.None))
+            {
+                if (child.Success)
+                {
+                    var craftsimMin = ImGui.GetCursorScreenPos();
+                    var craftsimHitSize = ImGui.GetContentRegionAvail();
+                    if (ImGui.InvisibleButton("##btn_craftsim", craftsimHitSize))
+                        onSelectTool(3);
+                    if (ImGui.IsItemHovered())
+                        ImGui.SetTooltip("Click to open Craftsim");
+                    ImGui.SetCursorScreenPos(craftsimMin);
+                    ImGui.PushStyleColor(ImGuiCol.Text, new System.Numerics.Vector4(0.45f, 0.28f, 0.65f, 1f));
+                    ImGui.Text("Craftsim");
+                    ImGui.PopStyleColor();
+                    ImGui.SetCursorPosX(ImGui.GetStyle().WindowPadding.X);
+                    ImGui.PushTextWrapPos(ImGui.GetCursorPos().X + wrapX);
+                    ImGui.TextWrapped("Find profitable crafting opportunities based on material costs, revenue metrics, and sales volume.");
+                    ImGui.PopTextWrapPos();
+                }
+            }
+
+            ImGui.Spacing();
+
+            // Shopping List
+            using (var child = ImRaii.Child("##tool_shopping_list", new System.Numerics.Vector2(cardWidth, cardHeight), true, ImGuiWindowFlags.None))
+            {
+                if (child.Success)
+                {
+                    var shoppingMin = ImGui.GetCursorScreenPos();
+                    var shoppingHitSize = ImGui.GetContentRegionAvail();
+                    if (ImGui.InvisibleButton("##btn_shopping_list", shoppingHitSize))
+                        onSelectTool(4);
+                    if (ImGui.IsItemHovered())
+                        ImGui.SetTooltip("Click to open Shopping List");
+                    ImGui.SetCursorScreenPos(shoppingMin);
+                    ImGui.PushStyleColor(ImGuiCol.Text, new System.Numerics.Vector4(0.45f, 0.28f, 0.65f, 1f));
+                    ImGui.Text("Shopping List Search");
+                    ImGui.PopStyleColor();
+                    ImGui.SetCursorPosX(ImGui.GetStyle().WindowPadding.X);
+                    ImGui.PushTextWrapPos(ImGui.GetCursorPos().X + wrapX);
+                    ImGui.TextWrapped("Helps make a shopping list for bulk crafting sessions, telling you where to find crafting materials for the best prices!");
+                    ImGui.PopTextWrapPos();
+                }
+            }
         }
 
         private void DrawDefaultHomeServerSection(Func<string> getDefaultHomeServer, Action<string> setDefaultHomeServer)
