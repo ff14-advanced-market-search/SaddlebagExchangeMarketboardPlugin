@@ -615,6 +615,8 @@ namespace SaddlebagExchange.UI
             {
                 ImGui.TableNextColumn();
                 ImGui.PushID(colId);
+                if (TryGetColumnHighlightColor(colId, out var headerColor))
+                    ImGui.PushStyleColor(ImGuiCol.Text, headerColor);
                 bool active = _sortColumnIndex == colId;
                 string headerText = GetColumnHeader(colId) + (active ? (_sortAscending ? " ▲" : " ▼") : "");
                 var cellAvail = ImGui.GetContentRegionAvail();
@@ -635,6 +637,8 @@ namespace SaddlebagExchange.UI
                 ImGui.PushTextWrapPos(p0.X + cellAvail.X);
                 ImGui.TextWrapped(headerText);
                 ImGui.PopTextWrapPos();
+                if (TryGetColumnHighlightColor(colId, out _))
+                    ImGui.PopStyleColor();
                 ImGui.PopID();
             }
 
@@ -646,6 +650,8 @@ namespace SaddlebagExchange.UI
                 foreach (int colId in visibleCols)
                 {
                     ImGui.TableNextColumn();
+                    if (TryGetColumnHighlightBg(colId, out uint bg))
+                        ImGui.TableSetBgColor(ImGuiTableBgTarget.CellBg, bg);
                     DrawCell(row, colId, SetClipboardTextAndNotify);
                 }
                 ImGui.PopID();
@@ -786,6 +792,61 @@ namespace SaddlebagExchange.UI
                 (int)CsResultColumn.Saddlebag => "Item Data",
                 (int)CsResultColumn.Universalis => "Universalis Link",
                 _ => "?"
+            };
+        }
+
+        private bool TryGetColumnHighlightColor(int column, out System.Numerics.Vector4 color)
+        {
+            if (IsSelectedRevenueColumn(column))
+            {
+                color = new System.Numerics.Vector4(0.05f, 0.62f, 0.25f, 1f);
+                return true;
+            }
+            if (IsSelectedCostColumn(column))
+            {
+                color = new System.Numerics.Vector4(0.75f, 0.16f, 0.16f, 1f);
+                return true;
+            }
+            color = default;
+            return false;
+        }
+
+        private bool TryGetColumnHighlightBg(int column, out uint color)
+        {
+            if (IsSelectedRevenueColumn(column))
+            {
+                color = ImGui.ColorConvertFloat4ToU32(new System.Numerics.Vector4(0.08f, 0.45f, 0.16f, 0.10f));
+                return true;
+            }
+            if (IsSelectedCostColumn(column))
+            {
+                color = ImGui.ColorConvertFloat4ToU32(new System.Numerics.Vector4(0.50f, 0.10f, 0.10f, 0.10f));
+                return true;
+            }
+            color = 0;
+            return false;
+        }
+
+        private bool IsSelectedRevenueColumn(int column)
+        {
+            return _params.RevenueMetric switch
+            {
+                "revenue_home_min_listing" => column == (int)CsResultColumn.RevenueHomeMin,
+                "revenue_region_min_listing" => column == (int)CsResultColumn.RevenueRegionMin,
+                "revenue_avg" => column == (int)CsResultColumn.RevenueAvg,
+                "revenue_median" => column == (int)CsResultColumn.RevenueMedian,
+                _ => false
+            };
+        }
+
+        private bool IsSelectedCostColumn(int column)
+        {
+            return _params.CostMetric switch
+            {
+                "material_min_listing_cost" => column == (int)CsResultColumn.CostMinListing,
+                "material_avg_cost" => column == (int)CsResultColumn.CostAvg,
+                "material_median_cost" => column == (int)CsResultColumn.CostMedian,
+                _ => false
             };
         }
 
