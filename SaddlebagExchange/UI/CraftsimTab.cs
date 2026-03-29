@@ -288,60 +288,95 @@ namespace SaddlebagExchange.UI
             ImGui.SetNextItemWidth(InputWidth);
             if (ImGui.Combo("Cost metric", ref costMetricIndex, CostMetricOptions.Select(o => o.Label).ToArray(), CostMetricOptions.Length))
                 _params.CostMetric = CostMetricOptions[costMetricIndex].Value;
+            ImGui.SameLine();
+            DrawHelpMarker(
+                "Cost metric used for craft material costs.\n\n" +
+                "TLDR: Regional Median is usually the most realistic.\n\n" +
+                "- Regional Median: realistic when shopping around your region.\n" +
+                "- Regional Average: more pessimistic/higher cost (includes lazy local buys).\n" +
+                "- Regional Minimum Listing: optimistic, may be skewed by tiny/odd listings.");
 
             int revenueMetricIndex = Array.FindIndex(RevenueMetricOptions, o => o.Value == _params.RevenueMetric);
             if (revenueMetricIndex < 0) revenueMetricIndex = 0;
             ImGui.SetNextItemWidth(InputWidth);
             if (ImGui.Combo("Revenue metric", ref revenueMetricIndex, RevenueMetricOptions.Select(o => o.Label).ToArray(), RevenueMetricOptions.Length))
                 _params.RevenueMetric = RevenueMetricOptions[revenueMetricIndex].Value;
+            ImGui.SameLine();
+            DrawHelpMarker(
+                "Revenue metric used for sell price assumptions.\n\n" +
+                "TLDR: Home Minimum Listing is highest potential profit.\n\n" +
+                "- Home Minimum Listing: highest upside, highest competition.\n" +
+                "- Regional Minimum Listing: realistic, very competitive region-wide pricing.\n" +
+                "- Regional Median: realistic lower pricing for steadier sales.\n" +
+                "- Regional Average: useful if you expect some undercuts before sale.");
 
             int salesPerWeek = _params.SalesPerWeek;
             ImGui.SetNextItemWidth(InputWidth);
             ImGui.InputInt("Min sales per week", ref salesPerWeek, 10, 50);
+            ImGui.SameLine();
+            DrawHelpMarker("Filter by minimum regional sales per week.\nIncrease for faster selling items.");
             _params.SalesPerWeek = Math.Max(0, salesPerWeek);
 
             int medianSalePrice = _params.MedianSalePrice;
             ImGui.SetNextItemWidth(InputWidth);
             ImGui.InputInt("Min median sale price", ref medianSalePrice, 1000, 10000);
+            ImGui.SameLine();
+            DrawHelpMarker("Filter by minimum regional median sale price per unit.\nIncrease for more valuable items.");
             _params.MedianSalePrice = Math.Max(0, medianSalePrice);
 
             int maxMaterialCost = _params.MaxMaterialCost;
             ImGui.SetNextItemWidth(InputWidth);
             ImGui.InputInt("Max material cost", ref maxMaterialCost, 1000, 10000);
+            ImGui.SameLine();
+            DrawHelpMarker("Filter out crafts with high estimated material cost.\nLower this value if you want cheaper crafts.");
             _params.MaxMaterialCost = Math.Max(0, maxMaterialCost);
 
             int stars = _params.Stars;
             ImGui.SetNextItemWidth(InputWidth);
             ImGui.InputInt("Stars (-1 any)", ref stars, 1, 2);
+            ImGui.SameLine();
+            DrawHelpMarker("Advanced: only search for recipes with this many stars or higher.\nUse -1 for any.");
             _params.Stars = Math.Max(-1, stars);
 
             int lvlLower = _params.LvlLowerLimit;
             ImGui.SetNextItemWidth(InputWidth);
             ImGui.InputInt("Min level (-1 any)", ref lvlLower, 1, 5);
+            ImGui.SameLine();
+            DrawHelpMarker("Advanced: filter out low level crafts that often have more crafters/competition.\nUse -1 for any.");
             _params.LvlLowerLimit = Math.Max(-1, lvlLower);
 
             int lvlUpper = _params.LvlUpperLimit;
             ImGui.SetNextItemWidth(InputWidth);
             ImGui.InputInt("Max level", ref lvlUpper, 1, 5);
+            ImGui.SameLine();
+            DrawHelpMarker("Advanced: filter out high level crafts (useful while leveling and missing max-level recipes).");
             _params.LvlUpperLimit = Math.Max(2, lvlUpper);
 
             int yields = _params.Yields;
             ImGui.SetNextItemWidth(InputWidth);
             ImGui.InputInt("Yields (-1 any)", ref yields, 1, 2);
+            ImGui.SameLine();
+            DrawHelpMarker("Advanced: only recipes that make multiple items per craft.\nExample: tinctures.\nUse -1 for any.");
             _params.Yields = Math.Max(-1, yields);
 
             bool hideExpert = _params.HideExpertRecipes;
             ImGui.Checkbox("Hide expert recipes", ref hideExpert);
+            ImGui.SameLine();
+            DrawHelpMarker("Advanced: hide expert crafts that are not guaranteed outcomes.\nExample: Water Otter Fountain Lumber.");
             _params.HideExpertRecipes = hideExpert;
 
             int filterCount = _params.Filters?.Length ?? 0;
             if (ImGui.Button($"Filters ({filterCount})"))
                 _showFiltersPopup = true;
+            ImGui.SameLine();
+            DrawHelpMarker("Item categories to include in search.\nYou can select multiple categories.");
 
             ImGui.SameLine();
             int jobsCount = _params.Jobs?.Length ?? 0;
             if (ImGui.Button($"Jobs ({jobsCount})"))
                 _showJobsPopup = true;
+            ImGui.SameLine();
+            DrawHelpMarker("DoH jobs to search recipes on.\nUse Omnicrafter to include all crafting jobs.");
 
             DrawHomeServerCombo();
 
@@ -489,6 +524,13 @@ namespace SaddlebagExchange.UI
             if (ImGui.Button("Close"))
                 ImGui.CloseCurrentPopup();
             ImGui.EndPopup();
+        }
+
+        private static void DrawHelpMarker(string tooltip)
+        {
+            ImGui.TextDisabled("(?)");
+            if (ImGui.IsItemHovered())
+                ImGui.SetTooltip(tooltip);
         }
 
         private void StartScan()
