@@ -11,7 +11,10 @@ namespace SaddlebagExchange.Services
 {
     /// <summary>
     /// Client for Saddlebag Exchange API (https://api.saddlebagexchange.com).
-    /// Wiki notes HTTP may be required due to Cloudflare: http://api.saddlebagexchange.com
+    ///
+    /// API Documentation:
+    /// - Swagger docs: https://docs.saddlebagexchange.com/docs
+    /// - ReDoc Reference: https://docs.saddlebagexchange.com/redoc
     /// </summary>
     public sealed class SaddlebagApiService : IDisposable
     {
@@ -21,7 +24,6 @@ namespace SaddlebagExchange.Services
             NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowReadingFromString
         };
 
-        // Wiki: HTTP may be required (Cloudflare). Try HTTPS first.
         private readonly HttpClient _http = new()
         {
             BaseAddress = new Uri("https://api.saddlebagexchange.com"),
@@ -55,6 +57,20 @@ namespace SaddlebagExchange.Services
             var json = await response.Content.ReadAsStringAsync(cancel).ConfigureAwait(false);
             var wrapper = JsonSerializer.Deserialize<MarketshareScanResponse>(json, JsonOptions);
             return wrapper?.Data ?? new List<MarketshareResultItem>();
+        }
+
+        /// <summary>
+        /// POST /api/v2/craftsim - Crafting profit calculator.
+        /// </summary>
+        public async Task<List<CraftsimResultItem>> CraftsimAsync(CraftsimParams request, CancellationToken cancel = default)
+        {
+            using var content = JsonContent.Create(request);
+            using var response = await _http.PostAsync("/api/v2/craftsim", content, cancel).ConfigureAwait(false);
+            response.EnsureSuccessStatusCode();
+
+            var json = await response.Content.ReadAsStringAsync(cancel).ConfigureAwait(false);
+            var wrapper = JsonSerializer.Deserialize<CraftsimScanResponse>(json, JsonOptions);
+            return wrapper?.Data ?? new List<CraftsimResultItem>();
         }
 
         public void Dispose() => _http.Dispose();

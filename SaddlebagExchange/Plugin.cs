@@ -43,6 +43,10 @@ namespace SaddlebagExchange
             _windowSystem.AddWindow(marketshareResultsWindow);
             _windowSystem.AddWindow(marketshareTreemapWindow);
 
+            var craftsimResultsWindow = new CraftsimResultsWindow(_mainWindow.GetCraftsimTab());
+            _mainWindow.GetCraftsimTab().SetResultsWindow(craftsimResultsWindow);
+            _windowSystem.AddWindow(craftsimResultsWindow);
+
             _onDraw = () => _windowSystem.Draw();
             _onOpenUi = () => _mainWindow.IsOpen = true;
 
