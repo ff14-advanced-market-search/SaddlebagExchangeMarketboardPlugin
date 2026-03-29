@@ -142,6 +142,30 @@ namespace SaddlebagExchange.UI
                     ImGui.PopTextWrapPos();
                 }
             }
+
+            ImGui.Spacing();
+
+            // Shopping List
+            using (var child = ImRaii.Child("##tool_shopping_list", new System.Numerics.Vector2(cardWidth, cardHeight), true, ImGuiWindowFlags.None))
+            {
+                if (child.Success)
+                {
+                    var shoppingMin = ImGui.GetCursorScreenPos();
+                    var shoppingHitSize = ImGui.GetContentRegionAvail();
+                    if (ImGui.InvisibleButton("##btn_shopping_list", shoppingHitSize))
+                        onSelectTool(4);
+                    if (ImGui.IsItemHovered())
+                        ImGui.SetTooltip("Click to open Shopping List");
+                    ImGui.SetCursorScreenPos(shoppingMin);
+                    ImGui.PushStyleColor(ImGuiCol.Text, new System.Numerics.Vector4(0.45f, 0.28f, 0.65f, 1f));
+                    ImGui.Text("Shopping List");
+                    ImGui.PopStyleColor();
+                    ImGui.SetCursorPosX(ImGui.GetStyle().WindowPadding.X);
+                    ImGui.PushTextWrapPos(ImGui.GetCursorPos().X + wrapX);
+                    ImGui.TextWrapped("Build a list of crafts, choose HQ/job/amount, and find the best worlds to buy materials.");
+                    ImGui.PopTextWrapPos();
+                }
+            }
         }
 
         private void DrawDefaultHomeServerSection(Func<string> getDefaultHomeServer, Action<string> setDefaultHomeServer)

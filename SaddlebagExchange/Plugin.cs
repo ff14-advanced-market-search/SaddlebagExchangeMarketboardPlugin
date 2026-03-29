@@ -22,6 +22,7 @@ namespace SaddlebagExchange
         public Plugin(
             IDalamudPluginInterface pluginInterface,
             ICommandManager commandManager,
+            IDataManager dataManager,
             IPluginLog log)
         {
             _pi = pluginInterface;
@@ -29,7 +30,7 @@ namespace SaddlebagExchange
             _log = log;
             _config = pluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
             _windowSystem = new WindowSystem(WindowSystemName);
-            _mainWindow = new MainWindow(pluginInterface, _config, () => _pi?.SavePluginConfig(_config));
+            _mainWindow = new MainWindow(pluginInterface, _config, () => _pi?.SavePluginConfig(_config), dataManager);
             _windowSystem.AddWindow(_mainWindow);
 
             var resellingResultsWindow = new ResellingResultsWindow(_mainWindow.GetResellingTab());
@@ -46,6 +47,10 @@ namespace SaddlebagExchange
             var craftsimResultsWindow = new CraftsimResultsWindow(_mainWindow.GetCraftsimTab());
             _mainWindow.GetCraftsimTab().SetResultsWindow(craftsimResultsWindow);
             _windowSystem.AddWindow(craftsimResultsWindow);
+
+            var shoppingListResultsWindow = new ShoppingListResultsWindow(_mainWindow.GetShoppingListTab());
+            _mainWindow.GetShoppingListTab().SetResultsWindow(shoppingListResultsWindow);
+            _windowSystem.AddWindow(shoppingListResultsWindow);
 
             _onDraw = () => _windowSystem.Draw();
             _onOpenUi = () => _mainWindow.IsOpen = true;

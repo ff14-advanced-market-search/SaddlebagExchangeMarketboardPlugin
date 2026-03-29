@@ -73,6 +73,20 @@ namespace SaddlebagExchange.Services
             return wrapper?.Data ?? new List<CraftsimResultItem>();
         }
 
+        /// <summary>
+        /// POST /api/v2/shoppinglist - Shopping list generator.
+        /// </summary>
+        public async Task<ShoppingListResponse> ShoppingListAsync(ShoppingListParams request, CancellationToken cancel = default)
+        {
+            using var content = JsonContent.Create(request);
+            using var response = await _http.PostAsync("/api/v2/shoppinglist", content, cancel).ConfigureAwait(false);
+            response.EnsureSuccessStatusCode();
+
+            var json = await response.Content.ReadAsStringAsync(cancel).ConfigureAwait(false);
+            var wrapper = JsonSerializer.Deserialize<ShoppingListResponse>(json, JsonOptions);
+            return wrapper ?? new ShoppingListResponse();
+        }
+
         public void Dispose() => _http.Dispose();
     }
 }
