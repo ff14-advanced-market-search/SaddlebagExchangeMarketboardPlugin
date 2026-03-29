@@ -202,18 +202,18 @@ namespace SaddlebagExchange.UI
         {
             (int)CsResultColumn.ItemName,
             (int)CsResultColumn.ProfitEst,
-            (int)CsResultColumn.SoldPerWeek,
-            (int)CsResultColumn.RevenueHomeMin,
-            (int)CsResultColumn.CostMinListing,
-            (int)CsResultColumn.RevenueRegionMin,
-            (int)CsResultColumn.RevenueMedian,
-            (int)CsResultColumn.RevenueAvg,
-            (int)CsResultColumn.CostMedian,
-            (int)CsResultColumn.CostAvg,
             (int)CsResultColumn.YieldsPerCraft,
             (int)CsResultColumn.Hq,
             (int)CsResultColumn.Saddlebag,
             (int)CsResultColumn.Universalis,
+            (int)CsResultColumn.SoldPerWeek,
+            (int)CsResultColumn.RevenueAvg,
+            (int)CsResultColumn.RevenueMedian,
+            (int)CsResultColumn.RevenueHomeMin,
+            (int)CsResultColumn.RevenueRegionMin,
+            (int)CsResultColumn.CostMinListing,
+            (int)CsResultColumn.CostMedian,
+            (int)CsResultColumn.CostAvg,
             (int)CsResultColumn.ItemId
         };
 
