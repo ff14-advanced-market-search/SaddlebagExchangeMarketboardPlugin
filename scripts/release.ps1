@@ -44,10 +44,15 @@ $repoJson = $repoJson -replace '("LastUpdated":\s*)\d+', "`${1}$unixNow"
 Set-Content $repoJsonPath -Value $repoJson -NoNewline
 Write-Output "Set repo.json AssemblyVersion to $Version and LastUpdated to $unixNow"
 
-# 3) Git: add, commit, push release
+# 3) Restore manifest.toml so it cannot be accidentally included
+#    in the release commit with a stale commit SHA.
 Push-Location $repoRoot
 try {
-    & git add -A
+    & git restore "$manifestPath"
+    Write-Output "Restored manifest.toml to last committed state (will be updated in a separate commit)"
+
+    # 4) Git: stage only version bump files, commit, push release
+    & git add "$csprojPath" "$repoJsonPath"
     & git status
     & git commit -m "Release $Version"
     & git push origin main
@@ -55,7 +60,7 @@ try {
     Pop-Location
 }
 
-# 4) Tag and push tag
+# 5) Tag and push tag
 Push-Location $repoRoot
 try {
     & git tag "v$Version"
@@ -64,21 +69,28 @@ try {
     Pop-Location
 }
 
-# 5) Set manifest.toml commit to current HEAD (the release commit we just pushed)
+# 6) Capture release commit SHA (this is the code state D17 builds)
 $commit = (git -C $repoRoot rev-parse HEAD)
+Write-Output "Release commit SHA: $commit"
+
+# 7) Set manifest.toml commit to release commit SHA
 $content = Get-Content $manifestPath -Raw
 $content = $content -replace '(?m)^commit = .*$', "commit = `"$commit`""
 Set-Content $manifestPath -Value $content.TrimEnd() -NoNewline
 Write-Output "Set SaddlebagExchange/manifest.toml commit to $commit"
 
-# 6) Commit and push manifest update
+# 8) Commit and push manifest pointer update
 Push-Location $repoRoot
 try {
-    & git add "SaddlebagExchange/manifest.toml"
+    & git add "$manifestPath"
     & git commit -m "Set manifest commit for $Version"
     & git push origin main
 } finally {
     Pop-Location
 }
 
-Write-Output "Release $Version done: version bumps, release commit + tag v$Version pushed, manifest commit set and pushed."
+Write-Output ""
+Write-Output "Release $Version done!"
+Write-Output "  Release commit (what D17 builds): $commit"
+Write-Output "  Tag: v$Version"
+Write-Output "  manifest.toml now points to the release commit."

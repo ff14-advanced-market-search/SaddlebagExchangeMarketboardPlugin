@@ -50,18 +50,26 @@ else
 fi
 echo "Set repo.json AssemblyVersion to $VERSION and LastUpdated to $UNIX_NOW"
 
-# 3) Git: add, commit, push release
-git add -A
+# 3) Restore manifest.toml so it cannot be accidentally included
+#    in the release commit with a stale commit SHA.
+git restore "$MANIFEST"
+echo "Restored manifest.toml to last committed state (will be updated in a separate commit)"
+
+# 4) Git: stage only version bump files, commit, push release
+git add "$CSPROJ" "$REPO_JSON"
 git status
 git commit -m "Release $VERSION"
 git push origin main
 
-# 4) Tag and push tag
+# 5) Tag and push tag
 git tag "v$VERSION"
 git push origin "v$VERSION"
 
-# 5) Set manifest.toml commit to current HEAD (release commit)
+# 6) Capture release commit SHA (this is the code state D17 builds)
 COMMIT=$(git -C "$REPO_ROOT" rev-parse HEAD)
+echo "Release commit SHA: $COMMIT"
+
+# 7) Set manifest.toml commit to release commit SHA
 if ! grep -q "commit =" "$MANIFEST"; then
   echo "Error: no 'commit =' line in $MANIFEST" >&2
   exit 1
@@ -77,9 +85,13 @@ if ! grep -qF "$COMMIT" "$MANIFEST"; then
 fi
 echo "Set SaddlebagExchange/manifest.toml commit to $COMMIT"
 
-# 6) Commit and push manifest update
-git add SaddlebagExchange/manifest.toml
+# 8) Commit and push manifest pointer update
+git add "$MANIFEST"
 git commit -m "Set manifest commit for $VERSION"
 git push origin main
 
-echo "Release $VERSION done: version bumps, release commit + tag v$VERSION pushed, manifest commit set and pushed."
+echo ""
+echo "Release $VERSION done!"
+echo "  Release commit (what D17 builds): $COMMIT"
+echo "  Tag: v$VERSION"
+echo "  manifest.toml now points to the release commit."
