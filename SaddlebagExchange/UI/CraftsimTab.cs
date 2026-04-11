@@ -5,6 +5,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Dalamud.Bindings.ImGui;
+using Dalamud.Interface.Utility;
+using Dalamud.Interface.Utility.Raii;
 using Dalamud.Utility;
 using SaddlebagExchange.Models;
 using SaddlebagExchange.Services;
@@ -285,8 +287,8 @@ namespace SaddlebagExchange.UI
 
             int costMetricIndex = Array.FindIndex(CostMetricOptions, o => o.Value == _params.CostMetric);
             if (costMetricIndex < 0) costMetricIndex = 0;
-            ImGui.SetNextItemWidth(InputWidth);
-            if (ImGui.Combo("Cost metric", ref costMetricIndex, CostMetricOptions.Select(o => o.Label).ToArray(), CostMetricOptions.Length))
+            ImGui.SetNextItemWidth(InputWidth * ImGuiHelpers.GlobalScale);
+            if (ImGui.Combo("Cost metric", ref costMetricIndex, CostMetricOptions.Select(o => o.Label).ToArray()))
                 _params.CostMetric = CostMetricOptions[costMetricIndex].Value;
             ImGui.SameLine();
             DrawHelpMarker(
@@ -298,8 +300,8 @@ namespace SaddlebagExchange.UI
 
             int revenueMetricIndex = Array.FindIndex(RevenueMetricOptions, o => o.Value == _params.RevenueMetric);
             if (revenueMetricIndex < 0) revenueMetricIndex = 0;
-            ImGui.SetNextItemWidth(InputWidth);
-            if (ImGui.Combo("Revenue metric", ref revenueMetricIndex, RevenueMetricOptions.Select(o => o.Label).ToArray(), RevenueMetricOptions.Length))
+            ImGui.SetNextItemWidth(InputWidth * ImGuiHelpers.GlobalScale);
+            if (ImGui.Combo("Revenue metric", ref revenueMetricIndex, RevenueMetricOptions.Select(o => o.Label).ToArray()))
                 _params.RevenueMetric = RevenueMetricOptions[revenueMetricIndex].Value;
             ImGui.SameLine();
             DrawHelpMarker(
@@ -311,49 +313,49 @@ namespace SaddlebagExchange.UI
                 "- Regional Average: useful if you expect some undercuts before sale.");
 
             int salesPerWeek = _params.SalesPerWeek;
-            ImGui.SetNextItemWidth(InputWidth);
+            ImGui.SetNextItemWidth(InputWidth * ImGuiHelpers.GlobalScale);
             ImGui.InputInt("Min sales per week", ref salesPerWeek, 10, 50);
             ImGui.SameLine();
             DrawHelpMarker("Filter by minimum regional sales per week.\nIncrease for faster selling items.");
             _params.SalesPerWeek = Math.Max(0, salesPerWeek);
 
             int medianSalePrice = _params.MedianSalePrice;
-            ImGui.SetNextItemWidth(InputWidth);
+            ImGui.SetNextItemWidth(InputWidth * ImGuiHelpers.GlobalScale);
             ImGui.InputInt("Min median sale price", ref medianSalePrice, 1000, 10000);
             ImGui.SameLine();
             DrawHelpMarker("Filter by minimum regional median sale price per unit.\nIncrease for more valuable items.");
             _params.MedianSalePrice = Math.Max(0, medianSalePrice);
 
             int maxMaterialCost = _params.MaxMaterialCost;
-            ImGui.SetNextItemWidth(InputWidth);
+            ImGui.SetNextItemWidth(InputWidth * ImGuiHelpers.GlobalScale);
             ImGui.InputInt("Max material cost", ref maxMaterialCost, 1000, 10000);
             ImGui.SameLine();
             DrawHelpMarker("Filter out crafts with high estimated material cost.\nLower this value if you want cheaper crafts.");
             _params.MaxMaterialCost = Math.Max(0, maxMaterialCost);
 
             int stars = _params.Stars;
-            ImGui.SetNextItemWidth(InputWidth);
+            ImGui.SetNextItemWidth(InputWidth * ImGuiHelpers.GlobalScale);
             ImGui.InputInt("Stars (-1 any)", ref stars, 1, 2);
             ImGui.SameLine();
             DrawHelpMarker("Advanced: only search for recipes with this many stars or higher.\nUse -1 for any.");
             _params.Stars = Math.Max(-1, stars);
 
             int lvlLower = _params.LvlLowerLimit;
-            ImGui.SetNextItemWidth(InputWidth);
+            ImGui.SetNextItemWidth(InputWidth * ImGuiHelpers.GlobalScale);
             ImGui.InputInt("Min level (-1 any)", ref lvlLower, 1, 5);
             ImGui.SameLine();
             DrawHelpMarker("Advanced: filter out low level crafts that often have more crafters/competition.\nUse -1 for any.");
             _params.LvlLowerLimit = Math.Max(-1, lvlLower);
 
             int lvlUpper = _params.LvlUpperLimit;
-            ImGui.SetNextItemWidth(InputWidth);
+            ImGui.SetNextItemWidth(InputWidth * ImGuiHelpers.GlobalScale);
             ImGui.InputInt("Max level", ref lvlUpper, 1, 5);
             ImGui.SameLine();
             DrawHelpMarker("Advanced: filter out high level crafts (useful while leveling and missing max-level recipes).");
             _params.LvlUpperLimit = Math.Max(2, lvlUpper);
 
             int yields = _params.Yields;
-            ImGui.SetNextItemWidth(InputWidth);
+            ImGui.SetNextItemWidth(InputWidth * ImGuiHelpers.GlobalScale);
             ImGui.InputInt("Yields (-1 any)", ref yields, 1, 2);
             ImGui.SameLine();
             DrawHelpMarker("Advanced: only recipes that make multiple items per craft.\nExample: tinctures.\nUse -1 for any.");
@@ -444,16 +446,16 @@ namespace SaddlebagExchange.UI
             int dcIdx = Array.IndexOf(dcs, _selectedDataCenter);
             if (dcIdx < 0) dcIdx = 0;
 
-            ImGui.SetNextItemWidth(InputWidth);
-            if (ImGui.Combo("Data Center", ref dcIdx, dcs, dcs.Length))
+            ImGui.SetNextItemWidth(InputWidth * ImGuiHelpers.GlobalScale);
+            if (ImGui.Combo("Data Center", ref dcIdx, dcs))
                 _selectedDataCenter = dcs[dcIdx];
 
             var worlds = WorldList.GetWorlds(_selectedDataCenter);
             int worldIdx = Array.FindIndex(worlds, w => string.Equals(w, _homeServerBuffer, StringComparison.OrdinalIgnoreCase));
             if (worldIdx < 0) worldIdx = 0;
 
-            ImGui.SetNextItemWidth(InputWidth);
-            if (ImGui.Combo("Home server", ref worldIdx, worlds, worlds.Length))
+            ImGui.SetNextItemWidth(InputWidth * ImGuiHelpers.GlobalScale);
+            if (ImGui.Combo("Home server", ref worldIdx, worlds))
             {
                 _homeServerBuffer = worlds[worldIdx];
                 _params.HomeServer = _homeServerBuffer;
@@ -467,7 +469,8 @@ namespace SaddlebagExchange.UI
                 ImGui.OpenPopup("Craftsim filters");
                 _showFiltersPopup = false;
             }
-            if (!ImGui.BeginPopup("Craftsim filters"))
+            using var popup = ImRaii.Popup("Craftsim filters");
+            if (!popup.Success)
                 return;
 
             int count = _params.Filters?.Length ?? 0;
@@ -479,7 +482,6 @@ namespace SaddlebagExchange.UI
                 val => _params.Filters = val);
             if (ImGui.Button("Close"))
                 ImGui.CloseCurrentPopup();
-            ImGui.EndPopup();
         }
 
         private void DrawJobsPopup()
@@ -489,7 +491,8 @@ namespace SaddlebagExchange.UI
                 ImGui.OpenPopup("Craftsim jobs");
                 _showJobsPopup = false;
             }
-            if (!ImGui.BeginPopup("Craftsim jobs"))
+            using var jobsPopup = ImRaii.Popup("Craftsim jobs");
+            if (!jobsPopup.Success)
                 return;
 
             var selected = new HashSet<int>(_params.Jobs ?? Array.Empty<int>());
@@ -523,7 +526,6 @@ namespace SaddlebagExchange.UI
 
             if (ImGui.Button("Close"))
                 ImGui.CloseCurrentPopup();
-            ImGui.EndPopup();
         }
 
         private static void DrawHelpMarker(string tooltip)
@@ -641,7 +643,8 @@ namespace SaddlebagExchange.UI
             var avail = ImGui.GetContentRegionAvail();
             var tableSize = new System.Numerics.Vector2(avail.X, Math.Max(220, avail.Y));
             string tableId = "CraftsimResults##" + _tableIdCounter;
-            if (!ImGui.BeginTable(tableId, visibleCols.Count, ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg | ImGuiTableFlags.Resizable | ImGuiTableFlags.ScrollY | ImGuiTableFlags.ScrollX, tableSize))
+            using var table = ImRaii.Table(tableId, visibleCols.Count, ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg | ImGuiTableFlags.Resizable | ImGuiTableFlags.ScrollY | ImGuiTableFlags.ScrollX, tableSize);
+            if (!table.Success)
                 return;
 
             for (int i = 0; i < visibleCols.Count; i++)
@@ -700,37 +703,37 @@ namespace SaddlebagExchange.UI
                 rowIndex++;
             }
 
-            ImGui.EndTable();
-
             if (_showColumnsPopup)
             {
                 ImGui.OpenPopup("Craftsim column options");
                 _showColumnsPopup = false;
             }
-            if (ImGui.BeginPopup("Craftsim column options"))
+            using (var colPopup = ImRaii.Popup("Craftsim column options"))
             {
-                ImGui.Text("Show / hide and reorder columns");
-                ImGui.Separator();
-                for (int i = 0; i < _columnOrder.Count; i++)
+                if (colPopup.Success)
                 {
-                    int colId = _columnOrder[i];
-                    ImGui.PushID(colId);
-                    bool vis = _columnVisible[colId];
-                    if (ImGui.Checkbox("##vis", ref vis))
-                        _columnVisible[colId] = vis;
-                    ImGui.SameLine();
-                    ImGui.Text(GetColumnHeader(colId));
-                    ImGui.SameLine();
-                    if (ImGui.SmallButton("Up") && i > 0)
-                        (_columnOrder[i], _columnOrder[i - 1]) = (_columnOrder[i - 1], _columnOrder[i]);
-                    ImGui.SameLine();
-                    if (ImGui.SmallButton("Down") && i < _columnOrder.Count - 1)
-                        (_columnOrder[i], _columnOrder[i + 1]) = (_columnOrder[i + 1], _columnOrder[i]);
-                    ImGui.PopID();
+                    ImGui.Text("Show / hide and reorder columns");
+                    ImGui.Separator();
+                    for (int i = 0; i < _columnOrder.Count; i++)
+                    {
+                        int colId = _columnOrder[i];
+                        ImGui.PushID(colId);
+                        bool vis = _columnVisible[colId];
+                        if (ImGui.Checkbox("##vis", ref vis))
+                            _columnVisible[colId] = vis;
+                        ImGui.SameLine();
+                        ImGui.Text(GetColumnHeader(colId));
+                        ImGui.SameLine();
+                        if (ImGui.SmallButton("Up") && i > 0)
+                            (_columnOrder[i], _columnOrder[i - 1]) = (_columnOrder[i - 1], _columnOrder[i]);
+                        ImGui.SameLine();
+                        if (ImGui.SmallButton("Down") && i < _columnOrder.Count - 1)
+                            (_columnOrder[i], _columnOrder[i + 1]) = (_columnOrder[i + 1], _columnOrder[i]);
+                        ImGui.PopID();
+                    }
+                    if (ImGui.Button("Close"))
+                        ImGui.CloseCurrentPopup();
                 }
-                if (ImGui.Button("Close"))
-                    ImGui.CloseCurrentPopup();
-                ImGui.EndPopup();
             }
         }
 
