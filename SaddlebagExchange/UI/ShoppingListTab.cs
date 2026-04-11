@@ -5,6 +5,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Dalamud.Bindings.ImGui;
+using Dalamud.Interface.Utility;
+using Dalamud.Interface.Utility.Raii;
 using Dalamud.Plugin.Services;
 using Lumina.Excel.Sheets;
 using SaddlebagExchange.Models;
@@ -88,7 +90,7 @@ namespace SaddlebagExchange.UI
             ImGui.SameLine();
             DrawHelpMarker("Add up to 10 items to find crafting ingredients for.");
 
-            ImGui.SetNextItemWidth(InputWidth * 1.4f);
+            ImGui.SetNextItemWidth(InputWidth * 1.4f * ImGuiHelpers.GlobalScale);
             ImGui.InputText("##shopping_item_search", ref _itemSearchInput, 128);
             DrawItemSuggestions();
 
@@ -186,85 +188,88 @@ namespace SaddlebagExchange.UI
             var avail = ImGui.GetContentRegionAvail();
             var tableSize = new System.Numerics.Vector2(avail.X, Math.Max(220, avail.Y));
             string tableId = "ShoppingListResults##" + _tableIdCounter;
-            if (!ImGui.BeginTable(tableId, visibleCols.Count, ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg | ImGuiTableFlags.Resizable | ImGuiTableFlags.ScrollY | ImGuiTableFlags.ScrollX, tableSize))
-                return;
-
-            foreach (int colId in visibleCols)
-                ImGui.TableSetupColumn(GetColumnHeader(colId), ImGuiTableColumnFlags.WidthFixed, GetDefaultColumnWidth(colId), (uint)colId);
-            ImGui.TableSetupScrollFreeze(0, 1);
-
-            ImGui.TableNextRow(ImGuiTableRowFlags.Headers);
-            foreach (int colId in visibleCols)
+            using (var table = ImRaii.Table(tableId, visibleCols.Count, ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg | ImGuiTableFlags.Resizable | ImGuiTableFlags.ScrollY | ImGuiTableFlags.ScrollX, tableSize))
             {
-                ImGui.TableNextColumn();
-                ImGui.PushID(colId);
-                bool active = _sortColumnIndex == colId;
-                string headerText = GetColumnHeader(colId) + (active ? (_sortAscending ? " ▲" : " ▼") : "");
-                var cellAvail = ImGui.GetContentRegionAvail();
-                var p0 = ImGui.GetCursorPos();
-                float lineH = ImGui.GetTextLineHeightWithSpacing();
-                float buttonH = Math.Min(cellAvail.Y, lineH * 4f);
-                if (ImGui.InvisibleButton("sort", new System.Numerics.Vector2(cellAvail.X, buttonH)))
-                {
-                    if (_sortColumnIndex == colId)
-                        _sortAscending = !_sortAscending;
-                    else
-                    {
-                        _sortColumnIndex = colId;
-                        _sortAscending = true;
-                    }
-                }
-                ImGui.SetCursorPos(p0);
-                ImGui.PushTextWrapPos(p0.X + cellAvail.X);
-                ImGui.TextWrapped(headerText);
-                ImGui.PopTextWrapPos();
-                ImGui.PopID();
-            }
+                if (!table.Success)
+                    return;
 
-            int rowIndex = 0;
-            foreach (var row in filtered)
-            {
-                ImGui.PushID(rowIndex++);
-                ImGui.TableNextRow();
+                foreach (int colId in visibleCols)
+                    ImGui.TableSetupColumn(GetColumnHeader(colId), ImGuiTableColumnFlags.WidthFixed, GetDefaultColumnWidth(colId), (uint)colId);
+                ImGui.TableSetupScrollFreeze(0, 1);
+
+                ImGui.TableNextRow(ImGuiTableRowFlags.Headers);
                 foreach (int colId in visibleCols)
                 {
                     ImGui.TableNextColumn();
-                    DrawResultCell(row, colId);
+                    ImGui.PushID(colId);
+                    bool active = _sortColumnIndex == colId;
+                    string headerText = GetColumnHeader(colId) + (active ? (_sortAscending ? " ▲" : " ▼") : "");
+                    var cellAvail = ImGui.GetContentRegionAvail();
+                    var p0 = ImGui.GetCursorPos();
+                    float lineH = ImGui.GetTextLineHeightWithSpacing();
+                    float buttonH = Math.Min(cellAvail.Y, lineH * 4f);
+                    if (ImGui.InvisibleButton("sort", new System.Numerics.Vector2(cellAvail.X, buttonH)))
+                    {
+                        if (_sortColumnIndex == colId)
+                            _sortAscending = !_sortAscending;
+                        else
+                        {
+                            _sortColumnIndex = colId;
+                            _sortAscending = true;
+                        }
+                    }
+                    ImGui.SetCursorPos(p0);
+                    ImGui.PushTextWrapPos(p0.X + cellAvail.X);
+                    ImGui.TextWrapped(headerText);
+                    ImGui.PopTextWrapPos();
+                    ImGui.PopID();
                 }
-                ImGui.PopID();
-            }
 
-            ImGui.EndTable();
+                int rowIndex = 0;
+                foreach (var row in filtered)
+                {
+                    ImGui.PushID(rowIndex++);
+                    ImGui.TableNextRow();
+                    foreach (int colId in visibleCols)
+                    {
+                        ImGui.TableNextColumn();
+                        DrawResultCell(row, colId);
+                    }
+                    ImGui.PopID();
+                }
+            }
 
             if (_showColumnsPopup)
             {
                 ImGui.OpenPopup("Shopping column options");
                 _showColumnsPopup = false;
             }
-            if (ImGui.BeginPopup("Shopping column options"))
+            using (var colPopup = ImRaii.Popup("Shopping column options"))
             {
-                ImGui.Text("Show / hide and reorder columns");
-                ImGui.Separator();
-                for (int i = 0; i < _columnOrder.Count; i++)
+                if (colPopup.Success)
                 {
-                    int colId = _columnOrder[i];
-                    ImGui.PushID(colId);
-                    bool vis = _columnVisible[colId];
-                    if (ImGui.Checkbox("##vis", ref vis))
-                        _columnVisible[colId] = vis;
-                    ImGui.SameLine();
-                    ImGui.Text(GetColumnHeader(colId));
-                    ImGui.SameLine();
-                    if (ImGui.SmallButton("Up") && i > 0)
-                        (_columnOrder[i], _columnOrder[i - 1]) = (_columnOrder[i - 1], _columnOrder[i]);
-                    ImGui.SameLine();
-                    if (ImGui.SmallButton("Down") && i < _columnOrder.Count - 1)
-                        (_columnOrder[i], _columnOrder[i + 1]) = (_columnOrder[i + 1], _columnOrder[i]);
-                    ImGui.PopID();
+                    ImGui.Text("Show / hide and reorder columns");
+                    ImGui.Separator();
+                    for (int i = 0; i < _columnOrder.Count; i++)
+                    {
+                        int colId = _columnOrder[i];
+                        ImGui.PushID(colId);
+                        bool vis = _columnVisible[colId];
+                        if (ImGui.Checkbox("##vis", ref vis))
+                            _columnVisible[colId] = vis;
+                        ImGui.SameLine();
+                        ImGui.Text(GetColumnHeader(colId));
+                        ImGui.SameLine();
+                        if (ImGui.SmallButton("Up") && i > 0)
+                            (_columnOrder[i], _columnOrder[i - 1]) = (_columnOrder[i - 1], _columnOrder[i]);
+                        ImGui.SameLine();
+                        if (ImGui.SmallButton("Down") && i < _columnOrder.Count - 1)
+                            (_columnOrder[i], _columnOrder[i + 1]) = (_columnOrder[i + 1], _columnOrder[i]);
+                        ImGui.PopID();
+                    }
+                    if (ImGui.Button("Close"))
+                        ImGui.CloseCurrentPopup();
                 }
-                if (ImGui.Button("Close"))
-                    ImGui.CloseCurrentPopup();
-                ImGui.EndPopup();
             }
 
             ImGui.Spacing();
@@ -393,22 +398,21 @@ namespace SaddlebagExchange.UI
                 return;
 
             var childH = Math.Min(180f, 24f * matches.Count + 8f);
-            if (!ImGui.BeginChild("##shopping_item_suggestions", new System.Numerics.Vector2(InputWidth * 1.4f, childH), true))
+            using (var child = ImRaii.Child("##shopping_item_suggestions", new System.Numerics.Vector2(InputWidth * 1.4f * ImGuiHelpers.GlobalScale, childH), true))
             {
-                ImGui.EndChild();
-                return;
-            }
-
-            foreach (var match in matches)
-            {
-                if (ImGui.Selectable(match.Name))
+                if (child.Success)
                 {
-                    AddItem(match);
-                    _itemSearchInput = string.Empty;
-                    break;
+                    foreach (var match in matches)
+                    {
+                        if (ImGui.Selectable(match.Name))
+                        {
+                            AddItem(match);
+                            _itemSearchInput = string.Empty;
+                            break;
+                        }
+                    }
                 }
             }
-            ImGui.EndChild();
         }
 
         private void DrawShoppingListTable()
@@ -416,7 +420,8 @@ namespace SaddlebagExchange.UI
             if (_shoppingList.Count == 0)
                 return;
 
-            if (!ImGui.BeginTable("##shopping_form_table", 5, ImGuiTableFlags.BordersInnerH | ImGuiTableFlags.RowBg | ImGuiTableFlags.Resizable))
+            using var formTable = ImRaii.Table("##shopping_form_table", 5, ImGuiTableFlags.BordersInnerH | ImGuiTableFlags.RowBg | ImGuiTableFlags.Resizable);
+            if (!formTable.Success)
                 return;
 
             ImGui.TableSetupColumn("Item", ImGuiTableColumnFlags.WidthStretch);
@@ -438,7 +443,7 @@ namespace SaddlebagExchange.UI
 
                 ImGui.TableNextColumn();
                 int craftAmount = row.CraftAmount;
-                ImGui.SetNextItemWidth(80f);
+                ImGui.SetNextItemWidth(80f * ImGuiHelpers.GlobalScale);
                 ImGui.InputInt("##craft_amount", ref craftAmount, 1, 5);
                 row.CraftAmount = Math.Max(1, craftAmount);
 
@@ -450,8 +455,8 @@ namespace SaddlebagExchange.UI
                 ImGui.TableNextColumn();
                 int jobIndex = Array.FindIndex(JobOptions, x => x.Value == row.Job);
                 if (jobIndex < 0) jobIndex = 0;
-                ImGui.SetNextItemWidth(220f);
-                if (ImGui.Combo("##job", ref jobIndex, JobOptions.Select(x => x.Label).ToArray(), JobOptions.Length))
+                ImGui.SetNextItemWidth(220f * ImGuiHelpers.GlobalScale);
+                if (ImGui.Combo("##job", ref jobIndex, JobOptions.Select(x => x.Label).ToArray()))
                     row.Job = JobOptions[jobIndex].Value;
 
                 ImGui.TableNextColumn();
@@ -464,8 +469,6 @@ namespace SaddlebagExchange.UI
 
             if (removeIndex >= 0)
                 _shoppingList.RemoveAt(removeIndex);
-
-            ImGui.EndTable();
         }
 
         private void DrawHomeServerCombo()
@@ -484,15 +487,15 @@ namespace SaddlebagExchange.UI
             int dcIdx = Array.IndexOf(dcs, _selectedDataCenter);
             if (dcIdx < 0) dcIdx = 0;
 
-            ImGui.SetNextItemWidth(InputWidth);
-            if (ImGui.Combo("Data Center", ref dcIdx, dcs, dcs.Length))
+            ImGui.SetNextItemWidth(InputWidth * ImGuiHelpers.GlobalScale);
+            if (ImGui.Combo("Data Center", ref dcIdx, dcs))
                 _selectedDataCenter = dcs[dcIdx];
 
             var worlds = WorldList.GetWorlds(_selectedDataCenter);
             int worldIdx = Array.FindIndex(worlds, w => string.Equals(w, _homeServerBuffer, StringComparison.OrdinalIgnoreCase));
             if (worldIdx < 0) worldIdx = 0;
-            ImGui.SetNextItemWidth(InputWidth);
-            if (ImGui.Combo("Home server", ref worldIdx, worlds, worlds.Length))
+            ImGui.SetNextItemWidth(InputWidth * ImGuiHelpers.GlobalScale);
+            if (ImGui.Combo("Home server", ref worldIdx, worlds))
                 _homeServerBuffer = worlds[worldIdx];
         }
 

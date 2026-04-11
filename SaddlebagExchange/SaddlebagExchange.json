@@ -1,0 +1,16 @@
+{
+  "Author": "Saddlebag Exchange",
+  "Name": "Saddlebag Exchange",
+  "Punchline": "Marketboard analytics for FFXIV",
+  "Description": "Advanced marketboard tools and cross-world arbitrage scanning.",
+  "ApplicableVersion": "any",
+  "Tags": [
+    "marketboard",
+    "economy",
+    "gil",
+    "crafting",
+    "money",
+    "trading",
+    "flipping"
+  ]
+}

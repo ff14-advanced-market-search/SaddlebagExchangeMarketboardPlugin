@@ -187,22 +187,24 @@ namespace SaddlebagExchange.UI
 
             string dcPreview = string.IsNullOrEmpty(_defaultDc) ? "Select data center..." : _defaultDc;
             ImGui.SetNextItemWidth(ServerComboWidth * ImGuiHelpers.GlobalScale);
-            if (ImGui.BeginCombo("Data Center", dcPreview))
+            using (var dcCombo = ImRaii.Combo("Data Center", dcPreview))
             {
-                foreach (string dc in WorldList.GetDataCenters())
+                if (dcCombo.Success)
                 {
-                    bool selected = _defaultDc == dc;
-                    if (ImGui.Selectable(dc, selected))
+                    foreach (string dc in WorldList.GetDataCenters())
                     {
-                        _defaultDc = dc;
-                        var dcWorlds = WorldList.GetWorlds(dc);
-                        if (dcWorlds.Length > 0 && Array.IndexOf(dcWorlds, currentWorld) < 0)
-                            setDefaultHomeServer(string.Empty);
+                        bool selected = _defaultDc == dc;
+                        if (ImGui.Selectable(dc, selected))
+                        {
+                            _defaultDc = dc;
+                            var dcWorlds = WorldList.GetWorlds(dc);
+                            if (dcWorlds.Length > 0 && Array.IndexOf(dcWorlds, currentWorld) < 0)
+                                setDefaultHomeServer(string.Empty);
+                        }
+                        if (selected)
+                            ImGui.SetItemDefaultFocus();
                     }
-                    if (selected)
-                        ImGui.SetItemDefaultFocus();
                 }
-                ImGui.EndCombo();
             }
 
             ImGui.SameLine();
@@ -210,17 +212,19 @@ namespace SaddlebagExchange.UI
             string[] worlds = string.IsNullOrEmpty(_defaultDc) ? Array.Empty<string>() : WorldList.GetWorlds(_defaultDc);
             string worldPreview = string.IsNullOrEmpty(currentWorld) ? "Select world..." : currentWorld;
             ImGui.SetNextItemWidth(ServerComboWidth * ImGuiHelpers.GlobalScale);
-            if (ImGui.BeginCombo("World", worldPreview))
+            using (var worldCombo = ImRaii.Combo("World", worldPreview))
             {
-                foreach (string world in worlds)
+                if (worldCombo.Success)
                 {
-                    bool selected = currentWorld == world;
-                    if (ImGui.Selectable(world, selected))
-                        setDefaultHomeServer(world);
-                    if (selected)
-                        ImGui.SetItemDefaultFocus();
+                    foreach (string world in worlds)
+                    {
+                        bool selected = currentWorld == world;
+                        if (ImGui.Selectable(world, selected))
+                            setDefaultHomeServer(world);
+                        if (selected)
+                            ImGui.SetItemDefaultFocus();
+                    }
                 }
-                ImGui.EndCombo();
             }
         }
     }
