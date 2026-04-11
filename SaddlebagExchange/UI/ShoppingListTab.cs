@@ -188,53 +188,55 @@ namespace SaddlebagExchange.UI
             var avail = ImGui.GetContentRegionAvail();
             var tableSize = new System.Numerics.Vector2(avail.X, Math.Max(220, avail.Y));
             string tableId = "ShoppingListResults##" + _tableIdCounter;
-            using var table = ImRaii.Table(tableId, visibleCols.Count, ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg | ImGuiTableFlags.Resizable | ImGuiTableFlags.ScrollY | ImGuiTableFlags.ScrollX, tableSize);
-            if (!table.Success)
-                return;
-
-            foreach (int colId in visibleCols)
-                ImGui.TableSetupColumn(GetColumnHeader(colId), ImGuiTableColumnFlags.WidthFixed, GetDefaultColumnWidth(colId), (uint)colId);
-            ImGui.TableSetupScrollFreeze(0, 1);
-
-            ImGui.TableNextRow(ImGuiTableRowFlags.Headers);
-            foreach (int colId in visibleCols)
+            using (var table = ImRaii.Table(tableId, visibleCols.Count, ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg | ImGuiTableFlags.Resizable | ImGuiTableFlags.ScrollY | ImGuiTableFlags.ScrollX, tableSize))
             {
-                ImGui.TableNextColumn();
-                ImGui.PushID(colId);
-                bool active = _sortColumnIndex == colId;
-                string headerText = GetColumnHeader(colId) + (active ? (_sortAscending ? " ▲" : " ▼") : "");
-                var cellAvail = ImGui.GetContentRegionAvail();
-                var p0 = ImGui.GetCursorPos();
-                float lineH = ImGui.GetTextLineHeightWithSpacing();
-                float buttonH = Math.Min(cellAvail.Y, lineH * 4f);
-                if (ImGui.InvisibleButton("sort", new System.Numerics.Vector2(cellAvail.X, buttonH)))
-                {
-                    if (_sortColumnIndex == colId)
-                        _sortAscending = !_sortAscending;
-                    else
-                    {
-                        _sortColumnIndex = colId;
-                        _sortAscending = true;
-                    }
-                }
-                ImGui.SetCursorPos(p0);
-                ImGui.PushTextWrapPos(p0.X + cellAvail.X);
-                ImGui.TextWrapped(headerText);
-                ImGui.PopTextWrapPos();
-                ImGui.PopID();
-            }
+                if (!table.Success)
+                    return;
 
-            int rowIndex = 0;
-            foreach (var row in filtered)
-            {
-                ImGui.PushID(rowIndex++);
-                ImGui.TableNextRow();
+                foreach (int colId in visibleCols)
+                    ImGui.TableSetupColumn(GetColumnHeader(colId), ImGuiTableColumnFlags.WidthFixed, GetDefaultColumnWidth(colId), (uint)colId);
+                ImGui.TableSetupScrollFreeze(0, 1);
+
+                ImGui.TableNextRow(ImGuiTableRowFlags.Headers);
                 foreach (int colId in visibleCols)
                 {
                     ImGui.TableNextColumn();
-                    DrawResultCell(row, colId);
+                    ImGui.PushID(colId);
+                    bool active = _sortColumnIndex == colId;
+                    string headerText = GetColumnHeader(colId) + (active ? (_sortAscending ? " ▲" : " ▼") : "");
+                    var cellAvail = ImGui.GetContentRegionAvail();
+                    var p0 = ImGui.GetCursorPos();
+                    float lineH = ImGui.GetTextLineHeightWithSpacing();
+                    float buttonH = Math.Min(cellAvail.Y, lineH * 4f);
+                    if (ImGui.InvisibleButton("sort", new System.Numerics.Vector2(cellAvail.X, buttonH)))
+                    {
+                        if (_sortColumnIndex == colId)
+                            _sortAscending = !_sortAscending;
+                        else
+                        {
+                            _sortColumnIndex = colId;
+                            _sortAscending = true;
+                        }
+                    }
+                    ImGui.SetCursorPos(p0);
+                    ImGui.PushTextWrapPos(p0.X + cellAvail.X);
+                    ImGui.TextWrapped(headerText);
+                    ImGui.PopTextWrapPos();
+                    ImGui.PopID();
                 }
-                ImGui.PopID();
+
+                int rowIndex = 0;
+                foreach (var row in filtered)
+                {
+                    ImGui.PushID(rowIndex++);
+                    ImGui.TableNextRow();
+                    foreach (int colId in visibleCols)
+                    {
+                        ImGui.TableNextColumn();
+                        DrawResultCell(row, colId);
+                    }
+                    ImGui.PopID();
+                }
             }
 
             if (_showColumnsPopup)
