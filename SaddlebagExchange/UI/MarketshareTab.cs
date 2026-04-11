@@ -169,21 +169,21 @@ namespace SaddlebagExchange.UI
             ImGui.Separator();
 
             int timePeriod = _params.TimePeriod;
-            ImGui.SetNextItemWidth(InputWidth);
+            ImGui.SetNextItemWidth(InputWidth * ImGuiHelpers.GlobalScale);
             ImGui.InputInt("Time period (hours)", ref timePeriod, 24, 168);
             ImGui.SameLine();
             DrawHelpMarker("Time period to search for sales in hours.\nex: 168 = 7 days, 24 = 1 day.");
             _params.TimePeriod = Math.Max(1, timePeriod);
 
             int salesAmount = _params.SalesAmount;
-            ImGui.SetNextItemWidth(InputWidth);
+            ImGui.SetNextItemWidth(InputWidth * ImGuiHelpers.GlobalScale);
             ImGui.InputInt("Min sales", ref salesAmount, 1, 5);
             ImGui.SameLine();
             DrawHelpMarker("Ignore items with less than this amount of sales\nin the chosen time period.");
             _params.SalesAmount = Math.Max(0, salesAmount);
 
             int averagePrice = _params.AveragePrice;
-            ImGui.SetNextItemWidth(InputWidth);
+            ImGui.SetNextItemWidth(InputWidth * ImGuiHelpers.GlobalScale);
             ImGui.InputInt("Min average price (gil)", ref averagePrice, 1000, 10000);
             ImGui.SameLine();
             DrawHelpMarker("Don't show items below this average price.");
@@ -201,8 +201,8 @@ namespace SaddlebagExchange.UI
 
             int sortIndex = Array.FindIndex(SortByOptions, o => o.Value == _params.SortBy);
             if (sortIndex < 0) sortIndex = 0;
-            ImGui.SetNextItemWidth(InputWidth * 1.2f);
-            if (ImGui.Combo("Sort by", ref sortIndex, SortByOptions.Select(o => o.Label).ToArray(), SortByOptions.Length))
+            ImGui.SetNextItemWidth(InputWidth * 1.2f * ImGuiHelpers.GlobalScale);
+            if (ImGui.Combo("Sort by", ref sortIndex, SortByOptions.Select(o => o.Label).ToArray()))
                 _params.SortBy = SortByOptions[sortIndex].Value;
 
             DrawHomeServerCombo();
@@ -427,7 +427,8 @@ namespace SaddlebagExchange.UI
             var avail = ImGui.GetContentRegionAvail();
             var tableSize = new System.Numerics.Vector2(avail.X, Math.Max(200, avail.Y));
             string tableId = "MarketshareResults##" + _tableIdCounter;
-            if (!ImGui.BeginTable(tableId, visibleCols.Count, ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg | ImGuiTableFlags.Resizable | ImGuiTableFlags.ScrollY | ImGuiTableFlags.ScrollX, tableSize))
+            using var table = ImRaii.Table(tableId, visibleCols.Count, ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg | ImGuiTableFlags.Resizable | ImGuiTableFlags.ScrollY | ImGuiTableFlags.ScrollX, tableSize);
+            if (!table.Success)
                 return;
 
             for (int i = 0; i < visibleCols.Count; i++)
@@ -490,41 +491,41 @@ namespace SaddlebagExchange.UI
                     ImGui.TableNextColumn();
             }
 
-            ImGui.EndTable();
-
             if (_showColumnsPopup)
             {
                 ImGui.OpenPopup("Marketshare column options");
                 _showColumnsPopup = false;
             }
-            if (ImGui.BeginPopup("Marketshare column options"))
+            using (var colPopup = ImRaii.Popup("Marketshare column options"))
             {
-                ImGui.Text("Show / hide and reorder columns");
-                ImGui.Separator();
-                for (int i = 0; i < _columnOrder.Count; i++)
+                if (colPopup.Success)
                 {
-                    int colId = _columnOrder[i];
-                    ImGui.PushID(colId);
-                    bool vis = _columnVisible[colId];
-                    if (ImGui.Checkbox("##vis", ref vis))
-                        _columnVisible[colId] = vis;
-                    ImGui.SameLine();
-                    ImGui.Text(GetColumnHeader(colId));
-                    ImGui.SameLine();
-                    if (ImGui.SmallButton("Up") && i > 0)
+                    ImGui.Text("Show / hide and reorder columns");
+                    ImGui.Separator();
+                    for (int i = 0; i < _columnOrder.Count; i++)
                     {
-                        (_columnOrder[i], _columnOrder[i - 1]) = (_columnOrder[i - 1], _columnOrder[i]);
+                        int colId = _columnOrder[i];
+                        ImGui.PushID(colId);
+                        bool vis = _columnVisible[colId];
+                        if (ImGui.Checkbox("##vis", ref vis))
+                            _columnVisible[colId] = vis;
+                        ImGui.SameLine();
+                        ImGui.Text(GetColumnHeader(colId));
+                        ImGui.SameLine();
+                        if (ImGui.SmallButton("Up") && i > 0)
+                        {
+                            (_columnOrder[i], _columnOrder[i - 1]) = (_columnOrder[i - 1], _columnOrder[i]);
+                        }
+                        ImGui.SameLine();
+                        if (ImGui.SmallButton("Down") && i < _columnOrder.Count - 1)
+                        {
+                            (_columnOrder[i], _columnOrder[i + 1]) = (_columnOrder[i + 1], _columnOrder[i]);
+                        }
+                        ImGui.PopID();
                     }
-                    ImGui.SameLine();
-                    if (ImGui.SmallButton("Down") && i < _columnOrder.Count - 1)
-                    {
-                        (_columnOrder[i], _columnOrder[i + 1]) = (_columnOrder[i + 1], _columnOrder[i]);
-                    }
-                    ImGui.PopID();
+                    if (ImGui.Button("Close"))
+                        ImGui.CloseCurrentPopup();
                 }
-                if (ImGui.Button("Close"))
-                    ImGui.CloseCurrentPopup();
-                ImGui.EndPopup();
             }
         }
 
@@ -690,39 +691,43 @@ namespace SaddlebagExchange.UI
             }
 
             string dcPreview = string.IsNullOrEmpty(_selectedDataCenter) ? "Select data center..." : _selectedDataCenter;
-            ImGui.SetNextItemWidth(InputWidth * 1.2f);
-            if (ImGui.BeginCombo("Data Center", dcPreview))
+            ImGui.SetNextItemWidth(InputWidth * 1.2f * ImGuiHelpers.GlobalScale);
+            using (var dcCombo = ImRaii.Combo("Data Center", dcPreview))
             {
-                foreach (string dc in WorldList.GetDataCenters())
+                if (dcCombo.Success)
                 {
-                    bool selected = _selectedDataCenter == dc;
-                    if (ImGui.Selectable(dc, selected))
+                    foreach (string dc in WorldList.GetDataCenters())
                     {
-                        _selectedDataCenter = dc;
-                        var dcWorlds = WorldList.GetWorlds(dc);
-                        if (dcWorlds.Length > 0 && Array.IndexOf(dcWorlds, _params.Server) < 0)
-                            _params.Server = string.Empty;
+                        bool selected = _selectedDataCenter == dc;
+                        if (ImGui.Selectable(dc, selected))
+                        {
+                            _selectedDataCenter = dc;
+                            var dcWorlds = WorldList.GetWorlds(dc);
+                            if (dcWorlds.Length > 0 && Array.IndexOf(dcWorlds, _params.Server) < 0)
+                                _params.Server = string.Empty;
+                        }
+                        if (selected) ImGui.SetItemDefaultFocus();
                     }
-                    if (selected) ImGui.SetItemDefaultFocus();
                 }
-                ImGui.EndCombo();
             }
 
             ImGui.SameLine();
 
             string[] worlds = string.IsNullOrEmpty(_selectedDataCenter) ? Array.Empty<string>() : WorldList.GetWorlds(_selectedDataCenter);
             string worldPreview = string.IsNullOrEmpty(_params.Server) ? "Select world..." : _params.Server;
-            ImGui.SetNextItemWidth(InputWidth * 1.2f);
-            if (ImGui.BeginCombo("World", worldPreview))
+            ImGui.SetNextItemWidth(InputWidth * 1.2f * ImGuiHelpers.GlobalScale);
+            using (var worldCombo = ImRaii.Combo("World", worldPreview))
             {
-                foreach (string world in worlds)
+                if (worldCombo.Success)
                 {
-                    bool selected = _params.Server == world;
-                    if (ImGui.Selectable(world, selected))
-                        _params.Server = world;
-                    if (selected) ImGui.SetItemDefaultFocus();
+                    foreach (string world in worlds)
+                    {
+                        bool selected = _params.Server == world;
+                        if (ImGui.Selectable(world, selected))
+                            _params.Server = world;
+                        if (selected) ImGui.SetItemDefaultFocus();
+                    }
                 }
-                ImGui.EndCombo();
             }
         }
 
@@ -789,7 +794,8 @@ namespace SaddlebagExchange.UI
                 ImGui.OpenPopup("Marketshare filters");
                 _showFiltersPopup = false;
             }
-            if (!ImGui.BeginPopup("Marketshare filters"))
+            using var filtersPopup = ImRaii.Popup("Marketshare filters");
+            if (!filtersPopup.Success)
                 return;
 
             int count = _params.Filters?.Length ?? 0;
@@ -801,7 +807,6 @@ namespace SaddlebagExchange.UI
                 val => _params.Filters = val);
             if (ImGui.Button("Close"))
                 ImGui.CloseCurrentPopup();
-            ImGui.EndPopup();
         }
 
         private void StartScan()
