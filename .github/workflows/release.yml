@@ -50,7 +50,14 @@ jobs:
             jq -c '.[0] | del(.DownloadLinkInstall, .ApplicableVersion, .DownloadLinkTesting, .DownloadLinkUpdate, .DownloadCount, .LastUpdated, .IsHide, .IsTestingExclusive) | . + {LoadRequiredState: 0}' repo.json > "$BIN/manifest.json"
           fi
           cp "$BIN/SaddlebagExchange.dll" "$STAGING/"
-          cp "$BIN/icon.png" "$STAGING/"
+          # Icon: Content is images/icon.png, so -o output is usually images/icon.png (not flat icon.png)
+          if [ -f "$BIN/icon.png" ]; then
+            cp "$BIN/icon.png" "$STAGING/"
+          elif [ -f "$BIN/images/icon.png" ]; then
+            cp "$BIN/images/icon.png" "$STAGING/icon.png"
+          else
+            cp "SaddlebagExchange/images/icon.png" "$STAGING/icon.png"
+          fi
           cp "$BIN/manifest.json" "$STAGING/"
           cd "$STAGING" && zip -r ../SaddlebagExchange.zip . && cd ..
           unzip -l SaddlebagExchange.zip
