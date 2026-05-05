@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
-using Dalamud.Utility;
 using SaddlebagExchange.Models;
 using SaddlebagExchange.Services;
 
@@ -970,8 +969,7 @@ namespace SaddlebagExchange.UI
 
         private static void OpenUrl(string? url)
         {
-            if (string.IsNullOrEmpty(url)) return;
-            Util.OpenLink(url);
+            ExternalLinkHelper.OpenHttpUrl(url);
         }
 
         public void Dispose()
